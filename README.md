@@ -1,104 +1,103 @@
 # Voistra
 
-![Voistra logo](./Диплом/apps/desktop/public/voistra-mark.svg)
+![Логотип Voistra](./apps/desktop/public/voistra-mark.svg)
 
-Voistra is a desktop voice workspace for teams, communities, and diploma demonstrations.  
-The project combines servers, text channels, voice rooms, screen sharing, private conversations, moderation, and packaged Windows delivery in one Electron application.
+`Voistra` — настольное голосовое рабочее пространство для команд, учебных проектов и демонстраций.  
+Проект объединяет серверы, текстовые и голосовые каналы, личные сообщения, демонстрацию экрана, систему друзей, уведомления и Windows-установщик в одном desktop-клиенте.
 
-## What Voistra already includes
+## Что уже реализовано
 
-- Desktop client on Electron + React + TypeScript
-- Backend API on NestJS + TypeORM + WebSocket gateway
-- Authentication with access and refresh tokens
-- Servers, text channels, voice channels, and private channels with passwords
-- Direct messages, friends, friend requests, and notification center
-- Voice presence, screen share signaling, moderation, and profile settings
-- Windows packaging with `electron-builder`
+- desktop-клиент на `Electron + React + TypeScript`
+- backend на `NestJS + TypeORM + WebSocket Gateway`
+- регистрация, вход, access/refresh токены
+- серверы, текстовые и голосовые каналы
+- приватные каналы с паролями
+- личные сообщения, друзья, заявки в друзья
+- уведомления, модерация, профиль пользователя
+- демонстрация экрана и голосовое присутствие
+- сборка Windows-приложения через `electron-builder`
 
-## Download and installation
+## Как скачать и установить
 
-### Recommended
+### Готовая версия
 
-Use the ready Windows build generated from the `main` branch:
+Рекомендуемый способ:
 
-1. Open the repository `Actions` tab.
-2. Run or open the latest `Voistra Windows Build` workflow.
-3. Download the `voistra-windows` artifact.
-4. Unpack the artifact archive.
-5. Run `Voistra Setup 0.1.0.exe`.
+1. Открой вкладку `Actions` в репозитории.
+2. Выбери последний запуск `Voistra Windows Build`.
+3. Скачай артефакт `voistra-windows`.
+4. Распакуй архив.
+5. Запусти `Voistra Setup 0.1.0.exe`.
 
-### Release flow
+### Как это работает
 
-The repository is configured so that:
+В репозитории уже настроено:
 
-- every push to `main` builds a fresh Windows installer artifact
-- every tag like `v0.1.0` publishes installer files into a GitHub Release
+- каждый push в `main` собирает свежую Windows-версию
+- каждый тег вида `v0.1.0` может публиковать артефакты в GitHub Release
 
-That gives you a stable download path for demonstration, review, and diploma submission.
+То есть основная ветка подходит как для обычного скачивания, так и для демонстрации дипломного проекта.
 
-## Local launch
-
-If you want to run the project from source:
+## Локальный запуск
 
 ```powershell
-cd "Диплом"
 npm install
 npm run dev --workspace @diplom/server
 npm run dev:renderer --workspace @diplom/desktop
 npm run dev:electron --workspace @diplom/desktop
 ```
 
-More local details are in [LOCAL_RUN.md](./Диплом/LOCAL_RUN.md).
+Подробности локального запуска: [LOCAL_RUN.md](./LOCAL_RUN.md)
 
-## Build the installer locally
+## Сборка установщика
 
 ```powershell
-cd "Диплом"
 npm install
 npm run dist:desktop
 ```
 
-Build artifacts are written to:
+Готовые файлы появляются здесь:
 
-- `Диплом/release/voistra/win-unpacked`
-- `Диплом/release/voistra/Voistra Setup 0.1.0.exe`
+- `release/voistra/win-unpacked`
+- `release/voistra/Voistra Setup 0.1.0.exe`
 
-## Repository structure
+## Структура репозитория
 
 ```text
 .
-├─ Диплом/
-│  ├─ apps/
-│  │  ├─ desktop/
-│  │  └─ server/
-│  ├─ scripts/
-│  ├─ docker-compose.yml
-│  └─ package.json
-└─ .github/
-   └─ workflows/
+├─ .github/
+│  └─ workflows/
+├─ apps/
+│  ├─ desktop/
+│  └─ server/
+├─ scripts/
+├─ docker-compose.yml
+├─ package.json
+└─ README.md
 ```
 
-## Tech stack
+## Технологии
 
 - Electron
 - React 19
 - Tailwind CSS
 - NestJS
 - TypeORM
-- SQLite for local data
-- Redis and coturn for infrastructure scenarios
-- RNNoise-based browser noise suppression integration
+- SQLite
+- Redis
+- coturn
+- RNNoise-based noise suppression
 
-## Current product focus
+## Назначение проекта
 
-Voistra is already suitable for:
+`Voistra` уже подходит для:
 
-- diploma presentation
-- local demonstration on Windows
-- functional showcase of voice workspace scenarios
+- защиты диплома
+- локальной демонстрации на Windows
+- демонстрации voice workspace-сценариев
 
-The project is still evolving, but the repository is already prepared as a distributable desktop product rather than only a development prototype.
+Проект ещё можно развивать дальше, но уже сейчас он оформлен как полноценный desktop-продукт, а не просто как черновой прототип.
 
-## Author
+## Автор
 
-Project owner: `Dens73`
+Автор проекта: `Dens73`

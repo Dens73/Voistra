@@ -14,11 +14,6 @@ jobs:
     permissions:
       contents: write
 
-    defaults:
-      run:
-        shell: powershell
-        working-directory: "Диплом"
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,12 +23,14 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: "Диплом/package-lock.json"
+          cache-dependency-path: "package-lock.json"
 
       - name: Install dependencies
+        shell: powershell
         run: npm ci
 
       - name: Build Windows distribution
+        shell: powershell
         run: npm run dist:desktop
 
       - name: Upload installer artifact
@@ -41,9 +38,9 @@ jobs:
         with:
           name: voistra-windows
           path: |
-            Диплом/release/voistra/Voistra Setup 0.1.0.exe
-            Диплом/release/voistra/Voistra Setup 0.1.0.exe.blockmap
-            Диплом/release/voistra/win-unpacked/**
+            release/voistra/Voistra Setup 0.1.0.exe
+            release/voistra/Voistra Setup 0.1.0.exe.blockmap
+            release/voistra/win-unpacked/**
           if-no-files-found: error
 
       - name: Publish GitHub release assets
@@ -51,5 +48,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            Диплом/release/voistra/Voistra Setup 0.1.0.exe
-            Диплом/release/voistra/Voistra Setup 0.1.0.exe.blockmap
+            release/voistra/Voistra Setup 0.1.0.exe
+            release/voistra/Voistra Setup 0.1.0.exe.blockmap
