@@ -1,0 +1,49 @@
+name: diploma_voip
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: diploma_server
+    restart: unless-stopped
+    env_file:
+      - ./apps/server/.env
+    depends_on:
+      - redis
+    environment:
+      DB_HOST: host.docker.internal
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "3001:3000"
+
+  redis:
+    image: redis:7-alpine
+    container_name: diploma_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  coturn:
+    image: coturn/coturn:4.6.3
+    container_name: diploma_coturn
+    restart: unless-stopped
+    command:
+      - --no-cli
+      - --log-file=stdout
+      - --realm=localhost
+      - --listening-port=3478
+      - --fingerprint
+      - --lt-cred-mech
+      - --user=demo:demo
+      - --min-port=49160
+      - --max-port=49200
+    ports:
+      - "3478:3478"
+      - "3478:3478/udp"
+      - "49160-49200:49160-49200/udp"
+
+volumes:
+  redis_data:

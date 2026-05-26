@@ -1,0 +1,20 @@
+{
+  "name": "diploma-voip-platform",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/server",
+    "apps/desktop"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace @diplom/server\" \"npm run dev --workspace @diplom/desktop\"",
+    "dev:infra": "docker compose up -d postgres redis coturn",
+    "build": "npm run build --workspace @diplom/server && npm run build --workspace @diplom/desktop",
+    "start:server": "npm run start --workspace @diplom/server",
+    "start:desktop": "npm run start --workspace @diplom/desktop",
+    "dist:desktop": "npm run build --workspace @diplom/server && npm run build --workspace @diplom/desktop && npm run dist:win --workspace @diplom/desktop"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

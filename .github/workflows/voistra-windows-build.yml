@@ -1,0 +1,55 @@
+name: Voistra Windows Build
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    defaults:
+      run:
+        shell: powershell
+        working-directory: "Диплом"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: "Диплом/package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Windows distribution
+        run: npm run dist:desktop
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: voistra-windows
+          path: |
+            Диплом/release/voistra/Voistra Setup 0.1.0.exe
+            Диплом/release/voistra/Voistra Setup 0.1.0.exe.blockmap
+            Диплом/release/voistra/win-unpacked/**
+          if-no-files-found: error
+
+      - name: Publish GitHub release assets
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            Диплом/release/voistra/Voistra Setup 0.1.0.exe
+            Диплом/release/voistra/Voistra Setup 0.1.0.exe.blockmap

@@ -1,0 +1,11 @@
+node_modules
+dist
+dist-electron
+dist-renderer
+.vite
+.env
+.env.local
+npm-debug.log
+apps/desktop/node_modules
+apps/server/node_modules
+.git
