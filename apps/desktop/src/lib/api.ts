@@ -34,6 +34,36 @@ const session = {
   refreshPromise: null as Promise<string> | null,
 };
 
+const RETRYABLE_METHODS = new Set(['GET', 'POST', 'PATCH', 'DELETE']);
+const SERVER_BOOT_RETRY_DELAYS = [250, 350, 500, 700, 900, 1200, 1500];
+
+function sleep(delayMs: number) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, delayMs);
+  });
+}
+
+async function fetchWithServerBootRetry(input: string, init: RequestInit) {
+  let lastError: unknown;
+  const method = (init.method ?? 'GET').toUpperCase();
+  const delays = RETRYABLE_METHODS.has(method) ? SERVER_BOOT_RETRY_DELAYS : [];
+
+  for (let attempt = 0; attempt <= delays.length; attempt += 1) {
+    try {
+      return await fetch(input, init);
+    } catch (error) {
+      lastError = error;
+      if (attempt === delays.length) {
+        break;
+      }
+
+      await sleep(delays[attempt]);
+    }
+  }
+
+  throw lastError ?? new Error('Failed to fetch');
+}
+
 export function configureApiSession(config: SessionConfig) {
   session.accessToken = config.accessToken ?? '';
   session.refreshToken = config.refreshToken ?? '';
@@ -72,7 +102,7 @@ async function refreshAccessToken() {
 
   if (!session.refreshPromise) {
     session.refreshPromise = (async () => {
-      const response = await fetch(`${API_URL}/auth/refresh`, {
+      const response = await fetchWithServerBootRetry(`${API_URL}/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken: session.refreshToken }),
@@ -100,7 +130,7 @@ async function request<T>(path: string, options: RequestOptions = {}) {
   const authToken = options.token ?? session.accessToken;
 
   try {
-    response = await fetch(`${API_URL}${path}`, {
+    response = await fetchWithServerBootRetry(`${API_URL}${path}`, {
       method: options.method ?? 'GET',
       headers: {
         'Content-Type': 'application/json',

@@ -62,14 +62,6 @@ function startBundledServer() {
     return;
   }
 
-  const nodeRuntimeCandidates = [
-    path.join(process.resourcesPath, 'node', 'node.exe'),
-    path.join(process.resourcesPath, 'node.exe'),
-    'node',
-  ];
-  const nodeRuntime =
-    nodeRuntimeCandidates.find((candidate) => candidate === 'node' || fs.existsSync(candidate)) ?? process.execPath;
-
   const logDir = app.getPath('userData');
   fs.mkdirSync(logDir, { recursive: true });
   const stdout = fs.openSync(path.join(logDir, 'backend.log'), 'a');
@@ -77,10 +69,11 @@ function startBundledServer() {
   const relativeServerEntry = path.relative(process.resourcesPath, serverEntry);
   const serverEntryArg = relativeServerEntry.startsWith('..') ? serverEntry : relativeServerEntry;
 
-  bundledServerProcess = spawn(nodeRuntime, [serverEntryArg], {
+  bundledServerProcess = spawn(process.execPath, [serverEntryArg], {
     cwd: process.resourcesPath,
     env: {
       ...process.env,
+      ELECTRON_RUN_AS_NODE: '1',
       PORT: process.env.PORT ?? '3000',
       DB_TYPE: process.env.DB_TYPE ?? 'sqljs',
       DB_FILE: process.env.DB_FILE ?? path.join(app.getPath('userData'), 'voistra.sqlite'),

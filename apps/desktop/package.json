@@ -12,7 +12,7 @@
     "dev:electron": "wait-on tcp:5173 file:dist-electron/main.js && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron dist-electron/main.js",
     "build": "npm run build:renderer && npm run build:electron",
     "build:renderer": "vite build",
-    "build:electron": "tsc -p tsconfig.electron.json && node scripts/copy-server-dist.cjs && node scripts/copy-node-runtime.cjs",
+    "build:electron": "tsc -p tsconfig.electron.json && node scripts/copy-server-dist.cjs && node scripts/copy-server-runtime-deps.cjs",
     "start": "electron dist-electron/main.js",
     "assets:icons": "node scripts/generate-icons.cjs",
     "dist": "node scripts/build-electron-dist.cjs --dir",
@@ -48,6 +48,10 @@
     "directories": {
       "output": "../../release/voistra"
     },
+    "electronLanguages": [
+      "en-US",
+      "ru"
+    ],
     "files": [
       "dist-electron/**/*",
       "dist-renderer/**/*",
@@ -62,14 +66,7 @@
         ]
       },
       {
-        "from": ".runtime/node",
-        "to": "node",
-        "filter": [
-          "**/*"
-        ]
-      },
-      {
-        "from": "../../node_modules",
+        "from": ".runtime/server-node_modules",
         "to": "node_modules",
         "filter": [
           "**/*"
