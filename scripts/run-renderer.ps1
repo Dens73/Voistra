@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
 $root = Resolve-Path (Join-Path $PSScriptRoot '..')
-$node = 'C:\Users\root\AppData\Local\OpenAI\Codex\bin\node.exe'
+$node = (Get-Command node -ErrorAction Stop).Source
 $log = Join-Path $root 'renderer-run.log'
 $err = Join-Path $root 'renderer-run.err.log'
 

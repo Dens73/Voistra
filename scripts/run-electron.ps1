@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
 $root = Resolve-Path (Join-Path $PSScriptRoot '..')
-$node = 'C:\Users\root\AppData\Local\OpenAI\Codex\bin\node.exe'
+$node = (Get-Command node -ErrorAction Stop).Source
 $electron = Join-Path $root 'node_modules\electron\cli.js'
 $log = Join-Path $root 'electron-run.log'
 $err = Join-Path $root 'electron-run.err.log'
