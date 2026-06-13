@@ -17,30 +17,7 @@ import { Server, Socket } from 'socket.io';
 import { AuditService } from '../audit/audit.service';
 import { ChannelEntity } from '../channels/channel.entity';
 import { ServerMemberEntity } from '../servers/server-member.entity';
-
-type AuthPayload = {
-  sub: string;
-  username: string;
-};
-
-type VoiceParticipant = {
-  socketId: string;
-  userId: string;
-  username: string;
-  muted: boolean;
-  deafened: boolean;
-  speaking: boolean;
-  pushToTalkActive: boolean;
-  voiceActivationActive: boolean;
-};
-
-type NetworkMetrics = {
-  rtt?: number;
-  jitter?: number;
-  packetLoss?: number;
-  bitrate?: number;
-  updatedAt: string;
-};
+import type { AuthPayload, NetworkMetrics, VoiceParticipant } from './realtime.types';
 
 @WebSocketGateway({
   cors: {

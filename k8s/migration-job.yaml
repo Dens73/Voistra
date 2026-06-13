@@ -1,0 +1,21 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: voistra-db-migration
+  namespace: voistra
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 600
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrations
+          image: ghcr.io/example/voistra-server:latest
+          imagePullPolicy: IfNotPresent
+          command: ["npm", "run", "migration:run"]
+          envFrom:
+            - configMapRef:
+                name: voistra-server-config
+            - secretRef:
+                name: voistra-server-secret

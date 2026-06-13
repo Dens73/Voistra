@@ -9,3 +9,12 @@ npm-debug.log
 apps/desktop/node_modules
 apps/server/node_modules
 .git
+release
+docs
+generated-doc-shots
+*.log
+*.sqlite
+.tmp
+*.docx
+*.pptx
+*.png

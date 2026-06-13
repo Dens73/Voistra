@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coturn
+  namespace: voistra
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: coturn
+  template:
+    metadata:
+      labels:
+        app: coturn
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+        - name: coturn
+          image: coturn/coturn:4.6.3
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: voistra-server-config
+            - secretRef:
+                name: voistra-server-secret
+          command:
+            - /bin/sh
+            - -c
+            - >
+              turnserver
+              --no-cli
+              --log-file=stdout
+              --realm=$TURN_REALM
+              --listening-port=3478
+              --fingerprint
+              --lt-cred-mech
+              --user=$TURN_USERNAME:$TURN_PASSWORD
+              --min-port=49160
+              --max-port=49200
+          ports:
+            - containerPort: 3478
+              hostPort: 3478
+              protocol: TCP
+            - containerPort: 3478
+              hostPort: 3478
+              protocol: UDP
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi

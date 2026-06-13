@@ -7,14 +7,18 @@
     "apps/desktop"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev --workspace @diplom/server\" \"npm run dev --workspace @diplom/desktop\"",
+    "dev": "concurrently \"npm run dev --workspace @diplom/server\" \"npm run dev --workspace voistra-desktop\"",
     "dev:infra": "docker compose up -d postgres redis coturn",
-    "build": "npm run build --workspace @diplom/server && npm run build --workspace @diplom/desktop",
+    "build": "npm run build --workspace @diplom/server && npm run build --workspace voistra-desktop",
     "start:server": "npm run start --workspace @diplom/server",
-    "start:desktop": "npm run start --workspace @diplom/desktop",
-    "dist:desktop": "npm run build --workspace @diplom/server && npm run build --workspace @diplom/desktop && npm run dist:win --workspace @diplom/desktop"
+    "start:desktop": "npm run start --workspace voistra-desktop",
+    "dist:desktop": "npm run build --workspace @diplom/server && npm run build --workspace voistra-desktop && npm run dist:win --workspace voistra-desktop"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
+  },
+  "dependencies": {
+    "jszip": "^3.10.1",
+    "pptxgenjs": "^4.0.1"
   }
 }

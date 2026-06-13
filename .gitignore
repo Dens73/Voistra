@@ -11,11 +11,16 @@ coverage
 *.log
 .DS_Store
 Thumbs.db
-release
 *.sqlite
 *.db
 *.tsbuildinfo
 apps/server/dist
 apps/desktop/dist-renderer
 apps/desktop/dist-electron
+apps/desktop/.runtime
 electron-capture.png
+scripts/__pycache__
+diplom_paragraphs_extract.txt
+doc_paragraph_dump.txt
+doc_paragraph_dump_checked.txt
+*.pptx

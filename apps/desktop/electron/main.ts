@@ -1,5 +1,5 @@
 import { app, BrowserWindow, desktopCapturer, dialog, ipcMain, session } from 'electron';
-import { fork, type ChildProcess } from 'node:child_process';
+import { spawn, type ChildProcess } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -51,18 +51,43 @@ function startBundledServer() {
     return;
   }
 
-  const serverEntry = path.join(process.resourcesPath, 'server', 'main.js');
-  if (!fs.existsSync(serverEntry)) {
-    console.warn('[electron] bundled server entry not found', serverEntry);
+  const serverEntryCandidates = [
+    path.join(process.resourcesPath, 'server', 'main.js'),
+    path.join(__dirname, 'server', 'main.js'),
+    path.join(__dirname, '..', 'server', 'main.js'),
+  ];
+  const serverEntry = serverEntryCandidates.find((candidate) => fs.existsSync(candidate));
+  if (!serverEntry) {
+    console.warn('[electron] bundled server entry not found', serverEntryCandidates);
     return;
   }
 
-  bundledServerProcess = fork(serverEntry, [], {
+  const nodeRuntimeCandidates = [
+    path.join(process.resourcesPath, 'node', 'node.exe'),
+    path.join(process.resourcesPath, 'node.exe'),
+    'node',
+  ];
+  const nodeRuntime =
+    nodeRuntimeCandidates.find((candidate) => candidate === 'node' || fs.existsSync(candidate)) ?? process.execPath;
+
+  const logDir = app.getPath('userData');
+  fs.mkdirSync(logDir, { recursive: true });
+  const stdout = fs.openSync(path.join(logDir, 'backend.log'), 'a');
+  const stderr = fs.openSync(path.join(logDir, 'backend.err.log'), 'a');
+  const relativeServerEntry = path.relative(process.resourcesPath, serverEntry);
+  const serverEntryArg = relativeServerEntry.startsWith('..') ? serverEntry : relativeServerEntry;
+
+  bundledServerProcess = spawn(nodeRuntime, [serverEntryArg], {
+    cwd: process.resourcesPath,
     env: {
       ...process.env,
       PORT: process.env.PORT ?? '3000',
+      DB_TYPE: process.env.DB_TYPE ?? 'sqljs',
+      DB_FILE: process.env.DB_FILE ?? path.join(app.getPath('userData'), 'voistra.sqlite'),
+      REDIS_URL: process.env.REDIS_URL ?? 'redis://localhost:6379',
     },
-    stdio: 'ignore',
+    windowsHide: true,
+    stdio: ['ignore', stdout, stderr],
   });
   bundledServerProcess.unref();
 }

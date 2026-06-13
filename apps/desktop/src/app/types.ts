@@ -68,6 +68,13 @@ export type ConnectedVoiceSession = {
   serverId: string;
 };
 
+export type AppNotification = {
+  id: string;
+  title: string;
+  body: string;
+  createdAt: string;
+};
+
 export type ActionIconKind =
   | 'plus'
   | 'link'

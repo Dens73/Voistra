@@ -1,5 +1,5 @@
 {
-  "name": "@diplom/desktop",
+  "name": "voistra-desktop",
   "version": "0.1.0",
   "private": true,
   "description": "Voistra desktop voice workspace",
@@ -12,7 +12,7 @@
     "dev:electron": "wait-on tcp:5173 file:dist-electron/main.js && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron dist-electron/main.js",
     "build": "npm run build:renderer && npm run build:electron",
     "build:renderer": "vite build",
-    "build:electron": "tsc -p tsconfig.electron.json",
+    "build:electron": "tsc -p tsconfig.electron.json && node scripts/copy-server-dist.cjs && node scripts/copy-node-runtime.cjs",
     "start": "electron dist-electron/main.js",
     "assets:icons": "node scripts/generate-icons.cjs",
     "dist": "node scripts/build-electron-dist.cjs --dir",
@@ -55,8 +55,15 @@
     ],
     "extraResources": [
       {
-        "from": "../server/dist",
+        "from": "dist-electron/server",
         "to": "server",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": ".runtime/node",
+        "to": "node",
         "filter": [
           "**/*"
         ]
@@ -81,8 +88,8 @@
       "signAndEditExecutable": false
     },
     "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
+      "oneClick": true,
+      "allowToChangeInstallationDirectory": false,
       "installerIcon": "build-assets/voistra-icon.ico",
       "uninstallerIcon": "build-assets/voistra-icon.ico",
       "installerHeaderIcon": "build-assets/voistra-icon.ico",

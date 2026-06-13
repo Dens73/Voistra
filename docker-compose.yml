@@ -10,12 +10,33 @@ services:
     env_file:
       - ./apps/server/.env
     depends_on:
+      - postgres
       - redis
     environment:
-      DB_HOST: host.docker.internal
+      DB_TYPE: postgres
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: diploma_voip
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_SYNCHRONIZE: "false"
+      DB_MIGRATIONS_RUN: "true"
       REDIS_URL: redis://redis:6379
     ports:
       - "3001:3000"
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: diploma_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: diploma_voip
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
   redis:
     image: redis:7-alpine
@@ -46,4 +67,5 @@ services:
       - "49160-49200:49160-49200/udp"
 
 volumes:
+  postgres_data:
   redis_data:

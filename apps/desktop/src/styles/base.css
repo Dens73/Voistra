@@ -1,0 +1,68 @@
+﻿:root {
+  --bg: #17181c;
+  --bg-accent: #20232a;
+  --panel: rgba(35, 36, 43, 0.92);
+  --panel-strong: #2a2d34;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --text: #f3f4f6;
+  --text-soft: #b5bdcc;
+  --text-faint: #8f97a8;
+  --brand: #159a8c;
+  --brand-soft: rgba(21, 154, 140, 0.16);
+  --brand-strong: #52c4b7;
+  --danger: #ed4245;
+  --shadow: 0 20px 48px rgba(0, 0, 0, 0.28);
+  color-scheme: dark;
+  font-family: "Aptos", "Segoe UI Variable", "Bahnschrift", "Trebuchet MS", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100vh;
+}
+
+body {
+  margin: 0;
+  min-width: 1180px;
+  background:
+    radial-gradient(circle at top left, rgba(21, 154, 140, 0.18), transparent 26%),
+    radial-gradient(circle at bottom right, rgba(82, 196, 183, 0.12), transparent 24%),
+    linear-gradient(180deg, #17181c 0%, #121318 100%);
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+}
+
+input,
+select {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(19, 20, 25, 0.92);
+  color: var(--text);
+  padding: 12px 14px;
+  outline: none;
+}
+
+input:focus,
+select:focus {
+  border-color: rgba(88, 101, 242, 0.5);
+  box-shadow: 0 0 0 4px rgba(88, 101, 242, 0.18);
+}
+

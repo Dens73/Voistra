@@ -6,6 +6,7 @@ import { AuditService } from '../audit/audit.service';
 import { UserEntity } from '../users/user.entity';
 import { CreateServerDto } from './dto/create-server.dto';
 import { ServerMemberEntity } from './server-member.entity';
+import { isActiveRestriction, serializeServerMember, sortServerMembers } from './server-member.presenter';
 import { ServerEntity } from './server.entity';
 
 type UpdateServerDto = {
@@ -80,7 +81,7 @@ export class ServersService {
 
     return servers
       .filter((server) =>
-        server.members.some((member) => member.userId === userId && !this.isActiveRestriction(member.bannedUntil)),
+        server.members.some((member) => member.userId === userId && !isActiveRestriction(member.bannedUntil)),
       )
       .map((server) => this.serializeServer(server, userId));
   }
@@ -103,7 +104,7 @@ export class ServersService {
     if (!membership) {
       throw new ForbiddenException('Access denied');
     }
-    if (this.isActiveRestriction(membership.bannedUntil)) {
+    if (isActiveRestriction(membership.bannedUntil)) {
       throw new ForbiddenException('You are temporarily banned from this server');
     }
 
@@ -128,7 +129,7 @@ export class ServersService {
     }
 
     const existingMembership = server.members.find((member) => member.userId === userId);
-    if (existingMembership && this.isActiveRestriction(existingMembership.bannedUntil)) {
+    if (existingMembership && isActiveRestriction(existingMembership.bannedUntil)) {
       throw new ForbiddenException('You are temporarily banned from this server');
     }
 
@@ -188,44 +189,8 @@ export class ServersService {
     }
 
     return server.members
-      .sort((left, right) => {
-        if (left.role === right.role) {
-          return left.createdAt.getTime() - right.createdAt.getTime();
-        }
-
-        if (left.role === 'owner') {
-          return -1;
-        }
-
-        if (right.role === 'owner') {
-          return 1;
-        }
-
-        if (left.role === 'admin') {
-          return -1;
-        }
-
-        if (right.role === 'admin') {
-          return 1;
-        }
-
-        return left.createdAt.getTime() - right.createdAt.getTime();
-      })
-      .map((member) => ({
-        id: member.id,
-        userId: member.userId,
-        role: member.role,
-        joinedAt: member.createdAt,
-        user: member.user
-          ? {
-              id: member.user.id,
-              username: member.user.username,
-              displayName: member.user.displayName,
-            }
-          : null,
-        isOwner: member.userId === server.ownerId,
-        moderation: this.serializeModeration(member),
-      }));
+      .sort(sortServerMembers)
+      .map((member) => serializeServerMember(member, server.ownerId));
   }
 
   async removeMember(serverId: string, memberUserId: string, actorUserId: string) {
@@ -307,21 +272,7 @@ export class ServersService {
 
     return {
       ok: true,
-      member: {
-        id: membership.id,
-        userId: membership.userId,
-        role: membership.role,
-        joinedAt: membership.createdAt,
-        user: membership.user
-          ? {
-              id: membership.user.id,
-              username: membership.user.username,
-              displayName: membership.user.displayName,
-            }
-          : null,
-        isOwner: membership.userId === server.ownerId,
-        moderation: this.serializeModeration(membership),
-      },
+      member: serializeServerMember(membership, server.ownerId),
     };
   }
 
@@ -373,20 +324,4 @@ export class ServersService {
     };
   }
 
-  private isActiveRestriction(value?: Date | null) {
-    return Boolean(value && new Date(value).getTime() > Date.now());
-  }
-
-  private serializeModeration(member: ServerMemberEntity) {
-    return {
-      bannedUntil: member.bannedUntil,
-      mutedUntil: member.mutedUntil,
-      deafenedUntil: member.deafenedUntil,
-      screenShareBlockedUntil: member.screenShareBlockedUntil,
-      isBanned: this.isActiveRestriction(member.bannedUntil),
-      isMuted: this.isActiveRestriction(member.mutedUntil),
-      isDeafened: this.isActiveRestriction(member.deafenedUntil),
-      isScreenShareBlocked: this.isActiveRestriction(member.screenShareBlockedUntil),
-    };
-  }
 }
