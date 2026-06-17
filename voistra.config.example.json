@@ -1,0 +1,4 @@
+{
+  "serverOrigin": "http://YOUR_PUBLIC_HOST_OR_IP:3001",
+  "localOrigin": "http://127.0.0.1:3001"
+}

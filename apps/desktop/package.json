@@ -75,6 +75,10 @@
       {
         "from": "public/voistra-mark.svg",
         "to": "public/voistra-mark.svg"
+      },
+      {
+        "from": "../../voistra.config.json",
+        "to": "voistra.config.json"
       }
     ],
     "win": {

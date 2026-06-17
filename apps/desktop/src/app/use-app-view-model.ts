@@ -33,6 +33,7 @@ type UseAppViewModelParams = {
   outputDevices: MediaDeviceInfo[];
   participants: VoiceParticipant[];
   profileForm: { avatarUrl: string };
+  selectedChannelId: string;
   selectedConversationId: string;
   selectedInputDeviceId: string;
   selectedMemberActionUserId: string;
@@ -62,6 +63,7 @@ export function useAppViewModel({
   outputDevices,
   participants,
   profileForm,
+  selectedChannelId,
   selectedConversationId,
   selectedInputDeviceId,
   selectedMemberActionUserId,

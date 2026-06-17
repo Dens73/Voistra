@@ -9,14 +9,14 @@ import type {
   Server,
   ServerMember,
 } from '../types';
-
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:3000/api';
+import { activateLocalRuntimeFallback, getApiUrl, isUsingLocalRuntimeFallback } from './runtime-config';
 
 type RequestOptions = {
   token?: string;
   method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   body?: unknown;
   _retry?: boolean;
+  _localRetried?: boolean;
 };
 
 type SessionConfig = {
@@ -102,11 +102,15 @@ async function refreshAccessToken() {
 
   if (!session.refreshPromise) {
     session.refreshPromise = (async () => {
-      const response = await fetchWithServerBootRetry(`${API_URL}/auth/refresh`, {
+      const response = await fetchWithServerBootRetry(`${getApiUrl()}/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken: session.refreshToken }),
       });
+
+      if (response.status === 502 && !isUsingLocalRuntimeFallback() && (await activateLocalRuntimeFallback())) {
+        return refreshAccessToken();
+      }
 
       if (!response.ok) {
         throw new Error('Unauthorized');
@@ -130,7 +134,7 @@ async function request<T>(path: string, options: RequestOptions = {}) {
   const authToken = options.token ?? session.accessToken;
 
   try {
-    response = await fetchWithServerBootRetry(`${API_URL}${path}`, {
+    response = await fetchWithServerBootRetry(`${getApiUrl()}${path}`, {
       method: options.method ?? 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -139,7 +143,17 @@ async function request<T>(path: string, options: RequestOptions = {}) {
       body: options.body ? JSON.stringify(options.body) : undefined,
     });
   } catch {
+    if (!options._localRetried && !isUsingLocalRuntimeFallback() && (await activateLocalRuntimeFallback())) {
+      return request<T>(path, { ...options, _localRetried: true });
+    }
     throw new Error('Failed to fetch');
+  }
+
+  if (response.status === 502 && !options._localRetried && !isUsingLocalRuntimeFallback()) {
+    const switchedToLocal = await activateLocalRuntimeFallback();
+    if (switchedToLocal) {
+      return request<T>(path, { ...options, _localRetried: true });
+    }
   }
 
   if (response.status === 401 && authToken && session.refreshToken && !options._retry) {

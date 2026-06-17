@@ -4,6 +4,7 @@ import type { Socket } from 'socket.io-client';
 import { AuthView } from '../screens/AuthView';
 import { AppWorkspaceShell } from '../components/AppWorkspaceShell';
 import { ChannelAccessModal } from '../components/ChannelAccessModal';
+import { ServerAccessModal } from '../components/ServerAccessModal';
 import { WorkspaceContentRouter } from '../components/WorkspaceContentRouter';
 import type {
   AuthUser,
@@ -43,9 +44,12 @@ import { useAppNotifications } from './use-app-notifications';
 import { useSessionActions } from './use-session-actions';
 import { useWorkspaceData } from './use-workspace-data';
 import { useVoiceRealtime } from './voice/use-voice-realtime';
+import { api } from '../lib/api';
+import { getRuntimeConfig } from '../lib/runtime-config';
 
 
 export function AppShell() {
+  const runtimeConfig = useMemo(() => getRuntimeConfig(), []);
   const [language, setLanguage] = useState<Language>(() => (localStorage.getItem(LANGUAGE_KEY) as Language) || 'ru');
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [token, setToken] = useState<string>(() => localStorage.getItem(TOKEN_KEY) ?? '');
@@ -193,8 +197,43 @@ export function AppShell() {
   const activeVoiceChannelIdRef = useRef<string>('');
   const statsBytesRef = useRef<Map<string, { bytes: number; timestamp: number }>>(new Map());
   const participantSocketsRef = useRef<Map<string, string>>(new Map());
+  const autoLoginAttemptedRef = useRef(false);
 
   const i18n = COPY[language];
+
+  useEffect(() => {
+    if (token || user || autoLoginAttemptedRef.current) {
+      return;
+    }
+
+    const username = runtimeConfig.autoLoginUsername?.trim();
+    const password = runtimeConfig.autoLoginPassword?.trim();
+    if (!username || !password) {
+      return;
+    }
+
+    autoLoginAttemptedRef.current = true;
+    setError('');
+    setAuthMode('login');
+    setAuthForm({
+      username,
+      displayName: '',
+      password,
+    });
+
+    void api
+      .login({ username, password })
+      .then((response) => {
+        setToken(response.accessToken);
+        setRefreshToken(response.refreshToken);
+        setUser(response.user);
+        setStatus(`${COPY[language].authenticatedAs} ${response.user.displayName}`);
+      })
+      .catch((nextError) => {
+        setError(asMessage(nextError));
+      });
+  }, [language, runtimeConfig, token, user]);
+
   const {
     activeShareEntries,
     avatarPreview,
@@ -233,6 +272,7 @@ export function AppShell() {
     outputDevices,
     participants,
     profileForm,
+    selectedChannelId,
     selectedConversationId,
     selectedInputDeviceId,
     selectedMemberActionUserId,
@@ -287,6 +327,7 @@ export function AppShell() {
     channels,
     createChannelForm,
     createServerForm,
+    directMessageDraft,
     i18n,
     joinServerForm,
     language,
@@ -672,6 +713,7 @@ export function AppShell() {
       onOpenConversation: (userId) => void handleOpenConversation(userId),
       onOutputDeviceChange: setSelectedOutputDeviceId,
       onProfileFormChange: setProfileForm,
+      onLogout: logout,
       onProfilePanelTabChange: setProfilePanelTab,
       onProfileSubmit: handleUpdateProfile,
       onRemoveChannel: (channelId) => void handleRemoveSpecificChannel(channelId),
@@ -729,6 +771,7 @@ export function AppShell() {
       onAvatarFileChange: (event) => void handleAvatarFileChange(event),
       onClearNotifications: clearNotifications,
       onCopy: (value, label) => void handleCopy(value, label),
+      onLanguageChange: setLanguage,
       onOpenFriends: () => {
         setWorkspaceMode('friends');
         setChannelPanelOpen(false);
@@ -773,6 +816,18 @@ export function AppShell() {
         onClose={() => setChannelAccessForm({ channelId: '', password: '' })}
         onPasswordChange={(value) => setChannelAccessForm((current) => ({ ...current, password: value }))}
         onSubmit={(event) => void handleUnlockChannel(event)}
+      />
+
+      <ServerAccessModal
+        open={serverModalOpen}
+        i18n={i18n}
+        createServerForm={createServerForm}
+        joinServerForm={joinServerForm}
+        onClose={() => setServerModalOpen(false)}
+        onCreateServerChange={setCreateServerForm}
+        onCreateServerSubmit={(event) => void handleCreateServer(event)}
+        onJoinServerChange={(value) => setJoinServerForm({ serverId: value })}
+        onJoinServerSubmit={(event) => void handleJoinServer(event)}
       />
     </>
   );

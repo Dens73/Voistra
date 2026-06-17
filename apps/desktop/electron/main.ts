@@ -4,12 +4,232 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const isDev = Boolean(process.env.VITE_DEV_SERVER_URL);
-const profileSuffix = process.env.VOISTRA_PROFILE?.trim() || (isDev ? `instance-${process.pid}` : '');
 let bundledServerProcess: ChildProcess | null = null;
+
+type CliOptions = {
+  profile?: string;
+  serverOrigin?: string;
+  apiUrl?: string;
+  socketUrl?: string;
+  autoLoginUsername?: string;
+  autoLoginPassword?: string;
+};
+
+function parseCliOptions(argv: string[]): CliOptions {
+  const options: CliOptions = {};
+
+  for (const arg of argv) {
+    if (!arg.startsWith('--')) {
+      continue;
+    }
+
+    const [key, ...rest] = arg.slice(2).split('=');
+    const value = rest.join('=').trim();
+    if (!value) {
+      continue;
+    }
+
+    switch (key) {
+      case 'profile':
+        options.profile = value;
+        break;
+      case 'server-origin':
+        options.serverOrigin = value;
+        break;
+      case 'api-url':
+        options.apiUrl = value;
+        break;
+      case 'socket-url':
+        options.socketUrl = value;
+        break;
+      case 'auto-login-username':
+        options.autoLoginUsername = value;
+        break;
+      case 'auto-login-password':
+        options.autoLoginPassword = value;
+        break;
+      default:
+        break;
+    }
+  }
+
+  return options;
+}
+
+const cliOptions = parseCliOptions(process.argv.slice(1));
+const profileSuffix = cliOptions.profile?.trim() || process.env.VOISTRA_PROFILE?.trim() || (isDev ? `instance-${process.pid}` : '');
+
+type RuntimeConfig = {
+  apiUrl: string;
+  socketUrl: string;
+  localApiUrl?: string;
+  localSocketUrl?: string;
+  mode: 'bundled' | 'remote';
+  autoLoginUsername?: string;
+  autoLoginPassword?: string;
+};
+
+type AuthBootstrapPayload = {
+  accessToken: string;
+  refreshToken: string;
+  user: {
+    id: string;
+    username: string;
+    displayName: string;
+  };
+};
 
 if (profileSuffix) {
   const baseUserDataPath = app.getPath('userData');
   app.setPath('userData', path.join(baseUserDataPath, profileSuffix));
+}
+
+function normalizeApiUrl(value: string) {
+  const trimmed = value.trim().replace(/\/+$/, '');
+  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+}
+
+function normalizeSocketUrl(value: string) {
+  const trimmed = value.trim().replace(/\/+$/, '');
+  return trimmed.endsWith('/ws') ? trimmed : `${trimmed}/ws`;
+}
+
+function isLocalUrl(value: string) {
+  try {
+    const parsed = new URL(value);
+    return ['127.0.0.1', 'localhost'].includes(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
+function readJsonFile<T>(filePath: string): T | null {
+  try {
+    if (!fs.existsSync(filePath)) {
+      return null;
+    }
+
+    const raw = fs.readFileSync(filePath, 'utf8').replace(/^\uFEFF/, '');
+    return JSON.parse(raw) as T;
+  } catch (error) {
+    console.warn('[electron] failed to read config', filePath, error);
+    return null;
+  }
+}
+
+function loadRuntimeConfig(): RuntimeConfig {
+  const defaultOrigin = 'http://127.0.0.1:3000';
+  const userDataConfigPath = path.join(app.getPath('userData'), 'voistra.config.json');
+  const processConfigPath = path.join(process.cwd(), 'voistra.config.json');
+  const executableConfigPath = path.join(path.dirname(process.execPath), 'voistra.config.json');
+  const resourcesConfigPath = path.join(process.resourcesPath, 'voistra.config.json');
+
+  const fileConfig =
+    readJsonFile<{
+      serverOrigin?: string;
+      apiUrl?: string;
+      socketUrl?: string;
+      localOrigin?: string;
+      localApiUrl?: string;
+      localSocketUrl?: string;
+    }>(userDataConfigPath) ??
+    readJsonFile<{
+      serverOrigin?: string;
+      apiUrl?: string;
+      socketUrl?: string;
+      localOrigin?: string;
+      localApiUrl?: string;
+      localSocketUrl?: string;
+    }>(executableConfigPath) ??
+    readJsonFile<{
+      serverOrigin?: string;
+      apiUrl?: string;
+      socketUrl?: string;
+      localOrigin?: string;
+      localApiUrl?: string;
+      localSocketUrl?: string;
+    }>(resourcesConfigPath) ??
+    readJsonFile<{
+      serverOrigin?: string;
+      apiUrl?: string;
+      socketUrl?: string;
+      localOrigin?: string;
+      localApiUrl?: string;
+      localSocketUrl?: string;
+    }>(processConfigPath);
+
+  const serverOrigin =
+    cliOptions.serverOrigin?.trim() ||
+    process.env.VOISTRA_SERVER_ORIGIN?.trim() ||
+    fileConfig?.serverOrigin?.trim() ||
+    defaultOrigin;
+  const apiUrl = normalizeApiUrl(
+    cliOptions.apiUrl?.trim() || process.env.VOISTRA_API_URL?.trim() || fileConfig?.apiUrl?.trim() || serverOrigin,
+  );
+  const socketUrl = normalizeSocketUrl(
+    cliOptions.socketUrl?.trim() ||
+      process.env.VOISTRA_SOCKET_URL?.trim() ||
+      fileConfig?.socketUrl?.trim() ||
+      serverOrigin,
+  );
+  const localOrigin =
+    fileConfig?.localOrigin?.trim() ||
+    (!isLocalUrl(serverOrigin) ? 'http://127.0.0.1:3001' : undefined);
+  const localApiUrl = localOrigin
+    ? normalizeApiUrl(fileConfig?.localApiUrl?.trim() || localOrigin)
+    : undefined;
+  const localSocketUrl = localOrigin
+    ? normalizeSocketUrl(fileConfig?.localSocketUrl?.trim() || localOrigin)
+    : undefined;
+
+  return {
+    apiUrl,
+    socketUrl,
+    localApiUrl,
+    localSocketUrl,
+    mode: isLocalUrl(apiUrl) ? 'bundled' : 'remote',
+    autoLoginUsername: cliOptions.autoLoginUsername?.trim() || undefined,
+    autoLoginPassword: cliOptions.autoLoginPassword?.trim() || undefined,
+  };
+}
+
+async function fetchAuthBootstrapPayload(
+  runtimeConfig: RuntimeConfig,
+  username: string,
+  password: string,
+) {
+  const endpoints = [
+    { apiUrl: runtimeConfig.apiUrl, socketUrl: runtimeConfig.socketUrl },
+    ...(runtimeConfig.localApiUrl && runtimeConfig.localSocketUrl
+      ? [{ apiUrl: runtimeConfig.localApiUrl, socketUrl: runtimeConfig.localSocketUrl }]
+      : []),
+  ];
+
+  let lastError: unknown;
+
+  for (const endpoint of endpoints) {
+    try {
+      const response = await fetch(`${endpoint.apiUrl}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      if (!response.ok) {
+        lastError = new Error(`Auto-login failed with status ${response.status}`);
+        continue;
+      }
+
+      const payload = (await response.json()) as AuthBootstrapPayload;
+      return payload;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError ?? new Error('Auto-login failed');
 }
 
 async function pickDisplaySource(parent: BrowserWindow | null) {
@@ -51,6 +271,12 @@ function startBundledServer() {
     return;
   }
 
+  const runtimeConfig = loadRuntimeConfig();
+  if (runtimeConfig.mode === 'remote') {
+    console.log('[electron] bundled backend disabled, using remote server', runtimeConfig.apiUrl);
+    return;
+  }
+
   const serverEntryCandidates = [
     path.join(process.resourcesPath, 'server', 'main.js'),
     path.join(__dirname, 'server', 'main.js'),
@@ -85,6 +311,55 @@ function startBundledServer() {
   bundledServerProcess.unref();
 }
 
+async function applyAutoLogin(window: BrowserWindow) {
+  const runtimeConfig = loadRuntimeConfig();
+  const username = runtimeConfig.autoLoginUsername?.trim();
+  const password = runtimeConfig.autoLoginPassword?.trim();
+  if (!username || !password || window.isDestroyed()) {
+    return;
+  }
+
+  try {
+    const alreadyAuthenticated = await window.webContents.executeJavaScript(
+      `(() => {
+        try {
+          const token = localStorage.getItem('diploma_voip_access_token');
+          const rawUser = localStorage.getItem('diploma_voip_user');
+          if (!token || !rawUser) {
+            return false;
+          }
+          const user = JSON.parse(rawUser);
+          return user?.username === ${JSON.stringify(username)};
+        } catch {
+          return false;
+        }
+      })()`,
+      true,
+    );
+
+    if (alreadyAuthenticated) {
+      return;
+    }
+
+    const payload = await fetchAuthBootstrapPayload(runtimeConfig, username, password);
+
+    await window.webContents.executeJavaScript(
+      `(() => {
+        localStorage.setItem('diploma_voip_access_token', ${JSON.stringify(payload.accessToken)});
+        localStorage.setItem('diploma_voip_refresh_token', ${JSON.stringify(payload.refreshToken)});
+        localStorage.setItem('diploma_voip_user', ${JSON.stringify(JSON.stringify(payload.user))});
+      })()`,
+      true,
+    );
+
+    if (!window.isDestroyed()) {
+      window.webContents.reload();
+    }
+  } catch (error) {
+    console.error('[electron] auto-login bootstrap failed', error);
+  }
+}
+
 function createWindow() {
   const window = new BrowserWindow({
     width: 1440,
@@ -105,6 +380,7 @@ function createWindow() {
 
   window.webContents.on('did-finish-load', () => {
     console.log('[electron] did-finish-load');
+    void applyAutoLogin(window);
   });
 
   window.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
@@ -138,6 +414,9 @@ app.whenReady().then(() => {
   startBundledServer();
   ipcMain.handle('app:get-version', () => app.getVersion());
   ipcMain.handle('app:get-platform', () => process.platform);
+  ipcMain.on('app:get-runtime-config', (event) => {
+    event.returnValue = loadRuntimeConfig();
+  });
   session.defaultSession.setDisplayMediaRequestHandler(
     (_request, callback) => {
       void pickDisplaySource(BrowserWindow.getFocusedWindow()).then((source) => {

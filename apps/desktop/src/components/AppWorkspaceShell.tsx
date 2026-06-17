@@ -4,7 +4,8 @@ import { NotificationCenter } from './NotificationCenter';
 import { ActionIcon, ChannelGlyph, ProfileAvatar } from './app-primitives';
 import { AccessBadge } from '../app/app-ui';
 import type { Channel, DirectConversation, Server } from '../types';
-import type { AppNotification, AuthUser, ConnectedVoiceSession, Language, WorkspaceMode } from '../app/types';
+import type { AuthUser } from '../types';
+import type { AppNotification, ConnectedVoiceSession, Language, WorkspaceMode } from '../app/types';
 
 type AppWorkspaceShellStrings = {
   chooseChannel: string;
@@ -57,6 +58,7 @@ type AppWorkspaceShellProps = {
   onAvatarFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onClearNotifications: () => void;
   onCopy: (value: string, label: string) => void;
+  onLanguageChange: (language: Language) => void;
   onOpenFriends: () => void;
   onOpenProfile: () => void;
   onOpenServerModal: () => void;
@@ -101,6 +103,7 @@ export function AppWorkspaceShell({
   onAvatarFileChange,
   onClearNotifications,
   onCopy,
+  onLanguageChange,
   onOpenFriends,
   onOpenProfile,
   onOpenServerModal,
@@ -115,7 +118,8 @@ export function AppWorkspaceShell({
 }: AppWorkspaceShellProps) {
   const serverDrawerWidth = serverDirectoryOpen ? 248 : 16;
   const secondarySidebarWidth = workspaceMode === 'servers' ? 288 : 0;
-  const effectiveChannelSidebarWidth = showChannelSidebar ? secondarySidebarWidth : 0;
+  const isChannelSidebarVisible = showChannelSidebar && Boolean(selectedServer);
+  const effectiveChannelSidebarWidth = isChannelSidebarVisible ? secondarySidebarWidth : 0;
   const shellPaddingLeft = 24 + serverDrawerWidth + (effectiveChannelSidebarWidth > 0 ? effectiveChannelSidebarWidth + 24 : 0);
 
   return (
@@ -161,10 +165,18 @@ export function AppWorkspaceShell({
               </button>
             </div>
             <div className="mt-3 inline-flex rounded-2xl border border-white/6 bg-[#121417] p-1">
-              <button className={language === 'ru' ? 'rounded-xl bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white' : 'rounded-xl px-3 py-1.5 text-xs font-medium text-slate-400 transition hover:text-white'} type="button">
+              <button
+                className={language === 'ru' ? 'rounded-xl bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white' : 'rounded-xl px-3 py-1.5 text-xs font-medium text-slate-400 transition hover:text-white'}
+                type="button"
+                onClick={() => onLanguageChange('ru')}
+              >
                 RU
               </button>
-              <button className={language === 'en' ? 'rounded-xl bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white' : 'rounded-xl px-3 py-1.5 text-xs font-medium text-slate-400 transition hover:text-white'} type="button">
+              <button
+                className={language === 'en' ? 'rounded-xl bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white' : 'rounded-xl px-3 py-1.5 text-xs font-medium text-slate-400 transition hover:text-white'}
+                type="button"
+                onClick={() => onLanguageChange('en')}
+              >
                 EN
               </button>
             </div>
@@ -205,7 +217,7 @@ export function AppWorkspaceShell({
         </div>
       </aside>
 
-      {showChannelSidebar && selectedServer ? (
+      {isChannelSidebarVisible && selectedServer ? (
         <aside
           className="fixed top-5 bottom-5 z-[60] w-[288px] overflow-hidden rounded-[28px] border border-white/6 bg-[#151a1d]/96 p-4 shadow-[0_28px_80px_rgba(0,0,0,0.42)] backdrop-blur-xl"
           style={{ left: serverDrawerWidth + 24 }}
@@ -328,7 +340,7 @@ export function AppWorkspaceShell({
                   <button className={serverDirectoryOpen ? 'inline-grid h-11 w-11 place-items-center rounded-2xl bg-emerald-500 text-white' : 'inline-grid h-11 w-11 place-items-center rounded-2xl border border-white/6 bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]'} type="button" onClick={() => onToggleServerDirectory()}>
                     <ActionIcon kind="panel" />
                   </button>
-                  <button className={showChannelSidebar ? 'inline-grid h-11 w-11 place-items-center rounded-2xl bg-emerald-500 text-white' : 'inline-grid h-11 w-11 place-items-center rounded-2xl border border-white/6 bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]'} type="button" onClick={onToggleChannelPanel}>
+                  <button className={isChannelSidebarVisible ? 'inline-grid h-11 w-11 place-items-center rounded-2xl bg-emerald-500 text-white' : 'inline-grid h-11 w-11 place-items-center rounded-2xl border border-white/6 bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]'} type="button" onClick={onToggleChannelPanel}>
                     <ActionIcon kind="menu" />
                   </button>
                   <button className={adminPanelOpen ? 'inline-grid h-11 w-11 place-items-center rounded-2xl bg-emerald-500 text-white' : 'inline-grid h-11 w-11 place-items-center rounded-2xl border border-white/6 bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]'} type="button" onClick={onToggleAdminPanel}>

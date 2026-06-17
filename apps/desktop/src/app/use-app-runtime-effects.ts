@@ -359,6 +359,7 @@ export function useAppRuntimeEffects({
     setDirectMessages,
     setError,
     setMessages,
+    setRtcConfig,
     setSelectedChannelId,
     setSelectedTextChannelId,
     setServerMembers,
@@ -371,6 +372,7 @@ export function useAppRuntimeEffects({
     unlockedChannelIds,
     userId: user?.id,
     voiceFlags,
+    workspaceMode,
   });
 
   useEffect(() => {

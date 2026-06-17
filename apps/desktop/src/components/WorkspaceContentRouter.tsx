@@ -1,4 +1,5 @@
 import type { FormEvent, RefObject } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 
 import { FriendsView } from '../screens/FriendsView';
 import { ProfileView } from '../screens/ProfileView';
@@ -102,7 +103,7 @@ type WorkspaceContentRouterProps = {
   onCloseAdminPanel: () => void;
   onCopy: (value: string, label: string) => void;
   onCreateChannel: (event: FormEvent<HTMLFormElement>) => void;
-  onCreateChannelFormChange: (updater: (current: { name: string; type: 'text' | 'voice'; isPrivate: boolean; password: string }) => { name: string; type: 'text' | 'voice'; isPrivate: boolean; password: string }) => void;
+  onCreateChannelFormChange: Dispatch<SetStateAction<{ name: string; type: 'text' | 'voice'; isPrivate: boolean; password: string }>>;
   onDirectDraftChange: (value: string) => void;
   onInputDeviceChange: (value: string) => void;
   onMessageDraftChange: (value: string) => void;
@@ -115,6 +116,7 @@ type WorkspaceContentRouterProps = {
   onOpenConversation: (userId: string) => void;
   onOutputDeviceChange: (value: string) => void;
   onProfileFormChange: (updater: (current: WorkspaceContentRouterProps['profileForm']) => WorkspaceContentRouterProps['profileForm']) => void;
+  onLogout: () => void;
   onProfilePanelTabChange: (tab: ProfilePanelTab) => void;
   onProfileSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onRemoveChannel: (channelId: string) => void;
@@ -126,8 +128,8 @@ type WorkspaceContentRouterProps = {
   onSendDirectMessage: (event: FormEvent<HTMLFormElement>) => void;
   onSendFriendRequest: (userId: string) => void;
   onSendMessage: (event: FormEvent<HTMLFormElement>) => void;
-  onServerSettingsFormChange: (updater: (current: { name: string; description: string }) => { name: string; description: string }) => void;
-  onSetChannelSettingsDrafts: (updater: (current: Record<string, { name: string; isPrivate: boolean; password: string }>) => Record<string, { name: string; isPrivate: boolean; password: string }>) => void;
+  onServerSettingsFormChange: Dispatch<SetStateAction<{ name: string; description: string }>>;
+  onSetChannelSettingsDrafts: Dispatch<SetStateAction<Record<string, { name: string; isPrivate: boolean; password: string }>>>;
   onSetMemberActionUserId: (updater: string | ((current: string) => string)) => void;
   onSetRemoteParticipantVolume: (updater: (current: Record<string, number>) => Record<string, number>) => void;
   onSetRemoteShareVolume: (updater: (current: Record<string, number>) => Record<string, number>) => void;
@@ -217,6 +219,7 @@ export function WorkspaceContentRouter(props: WorkspaceContentRouterProps) {
     onOpenConversation,
     onOutputDeviceChange,
     onProfileFormChange,
+    onLogout,
     onProfilePanelTabChange,
     onProfileSubmit,
     onRemoveChannel,
@@ -302,6 +305,7 @@ export function WorkspaceContentRouter(props: WorkspaceContentRouterProps) {
         onAudioControlChange={onAudioControlChange}
         onToggleMicrophoneTest={onToggleMicrophoneTest}
         onAudioEnhancementModeChange={onAudioEnhancementModeChange}
+        onLogout={onLogout}
         renderAudioProcessing={
           <div className="space-y-3">
             <ToggleRow label={i18n.voiceActivation} checked={profileForm.voiceActivationEnabled} onChange={(checked) => onProfileFormChange((current) => ({ ...current, voiceActivationEnabled: checked }))} />

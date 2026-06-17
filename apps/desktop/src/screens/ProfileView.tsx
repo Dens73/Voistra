@@ -16,6 +16,7 @@ type ProfileStrings = {
   currentPassword: string;
   newPassword: string;
   saveProfile: string;
+  logOut: string;
   testVoice: string;
   inputLevel: string;
   outputLevel: string;
@@ -69,6 +70,7 @@ type ProfileViewProps = {
   onAudioControlChange: (updater: (current: { inputLevel: number; outputLevel: number }) => { inputLevel: number; outputLevel: number }) => void;
   onToggleMicrophoneTest: () => void;
   onAudioEnhancementModeChange: (mode: AudioEnhancementMode) => void;
+  onLogout: () => void;
   renderAudioProcessing?: ReactNode;
 };
 
@@ -99,6 +101,7 @@ export function ProfileView({
   onAudioControlChange,
   onToggleMicrophoneTest,
   onAudioEnhancementModeChange,
+  onLogout,
   renderAudioProcessing,
 }: ProfileViewProps) {
   const micLabel = language === 'ru' ? 'Микрофон' : 'Microphone';
@@ -368,7 +371,14 @@ export function ProfileView({
           </div>
         ) : null}
 
-        <div className="flex justify-end">
+        <div className="flex flex-wrap justify-end gap-3">
+          <button
+            className="h-12 rounded-2xl border border-red-400/20 bg-red-500/12 px-5 text-sm font-semibold text-red-100 transition hover:bg-red-500/20"
+            type="button"
+            onClick={onLogout}
+          >
+            {i18n.logOut}
+          </button>
           <button className="h-12 rounded-2xl bg-emerald-500 px-5 text-sm font-semibold text-white transition hover:bg-emerald-400" type="submit">
             {i18n.saveProfile}
           </button>

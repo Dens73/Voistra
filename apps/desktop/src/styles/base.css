@@ -31,7 +31,8 @@ body,
 
 body {
   margin: 0;
-  min-width: 1180px;
+  min-width: 320px;
+  overflow-x: hidden;
   background:
     radial-gradient(circle at top left, rgba(21, 154, 140, 0.18), transparent 26%),
     radial-gradient(circle at bottom right, rgba(82, 196, 183, 0.12), transparent 24%),

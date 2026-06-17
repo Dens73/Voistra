@@ -136,6 +136,13 @@ declare global {
     desktopApi: {
       getVersion: () => Promise<string>;
       getPlatform: () => Promise<string>;
+      getRuntimeConfig: () => {
+        apiUrl: string;
+        socketUrl: string;
+        localApiUrl?: string;
+        localSocketUrl?: string;
+        mode: 'bundled' | 'remote';
+      };
     };
   }
 }

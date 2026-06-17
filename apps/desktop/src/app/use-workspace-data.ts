@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import type { Dispatch, FormEvent, SetStateAction } from 'react';
 
 import { api } from '../lib/api';
@@ -16,6 +17,7 @@ type UseWorkspaceDataParams = {
   channels: Channel[];
   createChannelForm: { name: string; type: 'text' | 'voice'; isPrivate: boolean; password: string };
   createServerForm: { name: string; description: string };
+  directMessageDraft: string;
   i18n: any;
   joinServerForm: { serverId: string };
   language: 'ru' | 'en';
@@ -76,6 +78,7 @@ export function useWorkspaceData({
   channels,
   createChannelForm,
   createServerForm,
+  directMessageDraft,
   i18n,
   joinServerForm,
   language,
@@ -125,6 +128,27 @@ export function useWorkspaceData({
   setUserSearchResults,
   setWorkspaceMode,
 }: UseWorkspaceDataParams) {
+  const lastNotifiedChannelMessageIdsRef = useRef<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!token || !user?.id) {
+      lastNotifiedChannelMessageIdsRef.current = {};
+    }
+  }, [token, user?.id]);
+
+  useEffect(() => {
+    const activeChannelIds = new Set(channels.filter((channel) => channel.type === 'text').map((channel) => channel.id));
+    const nextSnapshot: Record<string, string> = {};
+
+    for (const [channelId, messageId] of Object.entries(lastNotifiedChannelMessageIdsRef.current)) {
+      if (activeChannelIds.has(channelId)) {
+        nextSnapshot[channelId] = messageId;
+      }
+    }
+
+    lastNotifiedChannelMessageIdsRef.current = nextSnapshot;
+  }, [channels]);
+
   async function loadServers(currentToken: string) {
     try {
       const list = await api.getServers(currentToken);
@@ -229,7 +253,14 @@ export function useWorkspaceData({
       try {
         const list = await api.getMessages(currentToken, serverId, channel.id);
         const lastMessage = list[list.length - 1];
-        if (!lastMessage?.id || lastMessage.author?.id === user?.id) {
+        if (!lastMessage?.id) {
+          continue;
+        }
+
+        const previousMessageId = lastNotifiedChannelMessageIdsRef.current[channel.id];
+        lastNotifiedChannelMessageIdsRef.current[channel.id] = lastMessage.id;
+
+        if (lastMessage.author?.id === user?.id || previousMessageId === lastMessage.id) {
           continue;
         }
 

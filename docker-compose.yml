@@ -13,6 +13,7 @@ services:
       - postgres
       - redis
     environment:
+      HOST: 0.0.0.0
       DB_TYPE: postgres
       DB_HOST: postgres
       DB_PORT: 5432
@@ -21,6 +22,9 @@ services:
       DB_PASSWORD: postgres
       DB_SYNCHRONIZE: "false"
       DB_MIGRATIONS_RUN: "true"
+      TURN_URL: turn:${PUBLIC_HOST:-127.0.0.1}:3478
+      TURN_USERNAME: demo
+      TURN_PASSWORD: demo
       REDIS_URL: redis://redis:6379
     ports:
       - "3001:3000"
@@ -33,8 +37,6 @@ services:
       POSTGRES_DB: diploma_voip
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -42,8 +44,6 @@ services:
     image: redis:7-alpine
     container_name: diploma_redis
     restart: unless-stopped
-    ports:
-      - "6379:6379"
     volumes:
       - redis_data:/data
 
@@ -54,8 +54,9 @@ services:
     command:
       - --no-cli
       - --log-file=stdout
-      - --realm=localhost
+      - --realm=${PUBLIC_HOST:-localhost}
       - --listening-port=3478
+      - --external-ip=${PUBLIC_IP:-127.0.0.1}
       - --fingerprint
       - --lt-cred-mech
       - --user=demo:demo

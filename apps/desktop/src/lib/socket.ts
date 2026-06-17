@@ -1,9 +1,8 @@
 import { io, Socket } from 'socket.io-client';
-
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL ?? 'http://127.0.0.1:3000/ws';
+import { getSocketUrl } from './runtime-config';
 
 export function createRealtimeSocket(token: string): Socket {
-  return io(SOCKET_URL, {
+  return io(getSocketUrl(), {
     transports: ['websocket'],
     auth: {
       token,
