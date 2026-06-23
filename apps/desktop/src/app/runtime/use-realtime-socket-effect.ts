@@ -3,7 +3,7 @@ import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import type { Socket } from 'socket.io-client';
 
 import { createRealtimeSocket } from '../../lib/socket';
-import type { AuthUser, ConnectionMetrics, VoiceParticipant } from '../../types';
+import type { AuthUser, ConnectionMetrics, DirectConversation, DirectMessage, VoiceParticipant } from '../../types';
 import type { PeerDebugState, SignalingDescription, SignalingIce } from '../types';
 
 type SocketCopy = {
@@ -18,16 +18,21 @@ type Params = {
   handleRemoteIce: (payload: SignalingIce) => Promise<void>;
   i18n: SocketCopy;
   language: 'ru' | 'en';
+  loadConversations: (token: string) => Promise<void>;
+  loadDirectMessages: (token: string, conversationId: string) => Promise<void>;
   participantSocketsRef: MutableRefObject<Map<string, string>>;
   peerLabel: (userId: string) => string;
   pushNotification: (title: string, body: string, tone?: 'soft' | 'alert') => void;
   setActiveScreenShares: Dispatch<SetStateAction<Record<string, string>>>;
+  setConversations: Dispatch<SetStateAction<DirectConversation[]>>;
+  setDirectMessages: Dispatch<SetStateAction<DirectMessage[]>>;
   setMetrics: Dispatch<SetStateAction<Record<string, ConnectionMetrics>>>;
   setOnlineUserIds: Dispatch<SetStateAction<string[]>>;
   setParticipants: Dispatch<SetStateAction<VoiceParticipant[]>>;
   setRtcConfig: Dispatch<SetStateAction<RTCConfiguration>>;
   setSocket: Dispatch<SetStateAction<Socket | null>>;
   setStatus: Dispatch<SetStateAction<string>>;
+  selectedConversationIdRef: MutableRefObject<string>;
   socket: Socket | null;
   socketRef: MutableRefObject<Socket | null>;
   syncPeerConnections: (list: VoiceParticipant[]) => void;
@@ -41,16 +46,21 @@ export function useRealtimeSocketEffect({
   handleRemoteIce,
   i18n,
   language,
+  loadConversations,
+  loadDirectMessages,
   participantSocketsRef,
   peerLabel,
   pushNotification,
   setActiveScreenShares,
+  setConversations,
+  setDirectMessages,
   setMetrics,
   setOnlineUserIds,
   setParticipants,
   setRtcConfig,
   setSocket,
   setStatus,
+  selectedConversationIdRef,
   socket,
   socketRef,
   syncPeerConnections,
@@ -122,6 +132,37 @@ export function useRealtimeSocketEffect({
 
     nextSocket.on('presence:online', (payload: { onlineUserIds: string[] }) => {
       setOnlineUserIds(payload.onlineUserIds);
+    });
+
+    nextSocket.on('direct:message', (payload: { conversationId: string; message: DirectMessage }) => {
+      setConversations((current) =>
+        current.map((conversation) =>
+          conversation.id === payload.conversationId
+            ? {
+                ...conversation,
+                updatedAt: payload.message.createdAt,
+                lastMessage: payload.message,
+              }
+            : conversation,
+        ),
+      );
+
+      if (selectedConversationIdRef.current === payload.conversationId) {
+        setDirectMessages((current) =>
+          current.some((message) => message.id === payload.message.id) ? current : [...current, payload.message],
+        );
+        void loadDirectMessages(token, payload.conversationId);
+      } else {
+        void loadConversations(token);
+      }
+
+      if (payload.message.author?.id !== user?.id) {
+        pushNotification(
+          language === 'ru' ? 'Новое личное сообщение' : 'New direct message',
+          `${payload.message.author?.displayName ?? payload.message.author?.username ?? 'Voistra'}: ${payload.message.content}`,
+          'alert',
+        );
+      }
     });
 
     nextSocket.on('screen-share:started', (payload: { sourceName: string; userId: string }) => {

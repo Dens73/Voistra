@@ -5,6 +5,18 @@ import { COPY } from './app-copy';
 import { LANGUAGE_KEY } from './app-storage';
 import type { Language } from './types';
 
+type RemoteAudioSinkProps = {
+  media: Record<string, { audioStream?: MediaStream }>;
+  muted: boolean;
+  outputDeviceId: string;
+  volumes: Record<string, number>;
+  outputLevel: number;
+};
+
+function clampMediaVolume(value: number) {
+  return Math.max(0, Math.min(value, 1));
+}
+
 export function asMessage(error: unknown) {
   const language = (localStorage.getItem(LANGUAGE_KEY) as Language) || 'ru';
   const t = COPY[language];
@@ -154,6 +166,67 @@ export function RemoteMediaView({
           </label>
         </>
       ) : null}
+    </div>
+  );
+}
+
+function RemoteAudioElement({
+  muted,
+  outputDeviceId,
+  stream,
+  volume,
+}: {
+  muted: boolean;
+  outputDeviceId: string;
+  stream?: MediaStream;
+  volume: number;
+}) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (!audioRef.current) {
+      return;
+    }
+
+    audioRef.current.srcObject = stream ?? null;
+    audioRef.current.muted = muted;
+    audioRef.current.volume = clampMediaVolume(volume);
+    if (stream) {
+      void audioRef.current.play().catch(() => undefined);
+    }
+  }, [muted, stream, volume]);
+
+  useEffect(() => {
+    if (!outputDeviceId || outputDeviceId === 'default') {
+      return;
+    }
+
+    void (audioRef.current as HTMLAudioElement & { setSinkId?: (deviceId: string) => Promise<void> } | null)?.setSinkId?.(
+      outputDeviceId,
+    );
+  }, [outputDeviceId]);
+
+  return <audio ref={audioRef} autoPlay playsInline />;
+}
+
+export function RemoteAudioSink({
+  media,
+  muted,
+  outputDeviceId,
+  outputLevel,
+  volumes,
+}: RemoteAudioSinkProps) {
+  return (
+    <div aria-hidden="true" style={{ display: 'none' }}>
+      {Object.entries(media).map(([userId, remoteMedia]) => (
+        <RemoteAudioElement
+          key={userId}
+          muted={muted}
+          outputDeviceId={outputDeviceId}
+          stream={remoteMedia.audioStream}
+          volume={((volumes[userId] ?? 100) / 100) * (outputLevel / 100)}
+        />
+      ))}
     </div>
   );
 }

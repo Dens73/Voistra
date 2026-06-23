@@ -35,7 +35,6 @@ export function useNotificationEffects({
   userId,
 }: Params) {
   const previousIncomingRequestCountRef = useRef<number>(0);
-  const previousConversationSnapshotRef = useRef<Record<string, string>>({});
   const previousFriendIdsRef = useRef<string[]>([]);
   const previousVoiceParticipantIdsRef = useRef<string[]>([]);
   const previousModerationSnapshotRef = useRef<string>('');
@@ -69,33 +68,6 @@ export function useNotificationEffects({
     }
     previousFriendIdsRef.current = nextFriendIds;
   }, [friends, language, pushNotification]);
-
-  useEffect(() => {
-    const snapshot: Record<string, string> = {};
-    for (const conversation of conversations) {
-      if (conversation.lastMessage?.id) {
-        snapshot[conversation.id] = conversation.lastMessage.id;
-      }
-    }
-
-    const previous = previousConversationSnapshotRef.current;
-    if (Object.keys(previous).length > 0) {
-      for (const conversation of conversations) {
-        const lastMessage = conversation.lastMessage;
-        if (!lastMessage?.id) {
-          continue;
-        }
-        if (previous[conversation.id] && previous[conversation.id] !== lastMessage.id && lastMessage.author?.id !== userId) {
-          pushNotification(
-            language === 'ru' ? 'Новое личное сообщение' : 'New direct message',
-            `${conversation.participant?.displayName ?? i18n.unknownUser}: ${lastMessage.content}`,
-            'soft',
-          );
-        }
-      }
-    }
-    previousConversationSnapshotRef.current = snapshot;
-  }, [conversations, i18n.unknownUser, language, pushNotification, userId]);
 
   useEffect(() => {
     if (!connectedVoiceSession) {

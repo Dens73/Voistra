@@ -3,6 +3,7 @@ import {
   MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
@@ -17,6 +18,7 @@ import { Server, Socket } from 'socket.io';
 import { AuditService } from '../audit/audit.service';
 import { ChannelEntity } from '../channels/channel.entity';
 import { ServerMemberEntity } from '../servers/server-member.entity';
+import { RealtimeEventsService } from './realtime-events.service';
 import type { AuthPayload, NetworkMetrics, VoiceParticipant } from './realtime.types';
 
 @WebSocketGateway({
@@ -26,7 +28,7 @@ import type { AuthPayload, NetworkMetrics, VoiceParticipant } from './realtime.t
   },
   namespace: '/ws',
 })
-export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server;
 
@@ -43,7 +45,12 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly auditService: AuditService,
+    private readonly realtimeEvents: RealtimeEventsService,
   ) {}
+
+  afterInit(server: Server) {
+    this.realtimeEvents.attachServer(server);
+  }
 
   async handleConnection(client: Socket) {
     const token = this.extractToken(client);
@@ -66,6 +73,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
           password: this.configService.get<string>('TURN_PASSWORD', 'demo'),
         },
       });
+      this.realtimeEvents.addUserSocket(payload.sub, client.id);
       this.broadcastOnlineUsers();
     } catch {
       client.disconnect();
@@ -81,6 +89,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       } else {
         this.onlineUsers.set(user.sub, nextCount);
       }
+      this.realtimeEvents.removeUserSocket(user.sub, client.id);
       this.broadcastOnlineUsers();
     }
 

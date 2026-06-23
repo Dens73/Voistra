@@ -114,7 +114,7 @@ export function VoiceParticipantsPanel({
           <RemoteMediaView
             key={remoteUserId}
             label={participants.find((participant) => participant.userId === remoteUserId)?.username ?? remoteUserId}
-            audioStream={media.audioStream}
+            audioStream={undefined}
             screenStream={activeScreenShares[remoteUserId] ? media.screenStream : undefined}
             muted={voiceFlags.deafened}
             volume={clampMediaVolume(((remoteParticipantVolumes[remoteUserId] ?? 100) / 100) * (audioOutputLevel / 100))}

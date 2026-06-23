@@ -97,6 +97,7 @@ type UseAppRuntimeEffectsParams = {
   shareSystemAudioEnabled: boolean;
   selectedChannel: Channel | null;
   selectedConversationId: string;
+  selectedConversationIdRef: MutableRefObject<string>;
   selectedInputDeviceId: string;
   selectedOutputDeviceId: string;
   selectedServer: Server | null;
@@ -116,6 +117,7 @@ type UseAppRuntimeEffectsParams = {
   >;
   setChannelSettingsDrafts: Dispatch<SetStateAction<Record<string, { name: string; isPrivate: boolean; password: string }>>>;
   setChannels: Dispatch<SetStateAction<Channel[]>>;
+  setConversations: Dispatch<SetStateAction<DirectConversation[]>>;
   setDirectMessages: Dispatch<SetStateAction<import('../types').DirectMessage[]>>;
   setError: Dispatch<SetStateAction<string>>;
   setMessages: Dispatch<SetStateAction<import('../types').Message[]>>;
@@ -205,6 +207,7 @@ export function useAppRuntimeEffects({
   shareSystemAudioEnabled,
   selectedChannel,
   selectedConversationId,
+  selectedConversationIdRef,
   selectedInputDeviceId,
   selectedOutputDeviceId,
   selectedServer,
@@ -216,6 +219,7 @@ export function useAppRuntimeEffects({
   setAudioPreferences,
   setChannelSettingsDrafts,
   setChannels,
+  setConversations,
   setDirectMessages,
   setError,
   setMessages,
@@ -294,6 +298,11 @@ export function useAppRuntimeEffects({
     participantSocketsRef,
     peerLabel,
     pushNotification,
+    loadConversations,
+    loadDirectMessages,
+    selectedConversationIdRef,
+    setConversations,
+    setDirectMessages,
     setActiveScreenShares,
     setMetrics,
     setOnlineUserIds,

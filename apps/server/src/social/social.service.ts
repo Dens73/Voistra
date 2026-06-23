@@ -9,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { AuditService } from '../audit/audit.service';
+import { RealtimeEventsService } from '../realtime/realtime-events.service';
 import { UserEntity } from '../users/user.entity';
 import { UsersService } from '../users/users.service';
 import { DirectConversationEntity } from './direct-conversation.entity';
@@ -32,6 +33,7 @@ export class SocialService {
     private readonly usersRepository: Repository<UserEntity>,
     private readonly usersService: UsersService,
     private readonly auditService: AuditService,
+    private readonly realtimeEvents: RealtimeEventsService,
   ) {}
 
   async listFriends(userId: string) {
@@ -238,7 +240,7 @@ export class SocialService {
   }
 
   async sendMessage(conversationId: string, dto: SendDirectMessageDto, userId: string) {
-    await this.ensureParticipant(conversationId, userId);
+    const conversation = await this.ensureParticipant(conversationId, userId);
 
     const message = await this.directMessagesRepository.save(
       this.directMessagesRepository.create({
@@ -251,10 +253,31 @@ export class SocialService {
     await this.conversationsRepository.update({ id: conversationId }, { updatedAt: new Date() });
     await this.auditService.log('direct.sent', { conversationId, messageId: message.id }, userId);
 
-    return this.directMessagesRepository.findOne({
+    const savedMessage = await this.directMessagesRepository.findOne({
       where: { id: message.id },
       relations: ['author'],
     });
+
+    const serializedMessage = savedMessage
+      ? {
+          id: savedMessage.id,
+          content: savedMessage.content,
+          createdAt: savedMessage.createdAt,
+          author: savedMessage.author ? this.usersService.serializeUser(savedMessage.author) : null,
+        }
+      : null;
+
+    if (serializedMessage) {
+      const participantIds = [conversation.participantAId, conversation.participantBId];
+      for (const participantId of participantIds) {
+        this.realtimeEvents.emitToUser(participantId, 'direct:message', {
+          conversationId,
+          message: serializedMessage,
+        });
+      }
+    }
+
+    return savedMessage;
   }
 
   private async ensureParticipant(conversationId: string, userId: string) {

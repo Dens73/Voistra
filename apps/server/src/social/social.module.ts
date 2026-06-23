@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AuditModule } from '../audit/audit.module';
+import { RealtimeModule } from '../realtime/realtime.module';
 import { UserEntity } from '../users/user.entity';
 import { UsersModule } from '../users/users.module';
 import { DirectConversationEntity } from './direct-conversation.entity';
@@ -15,6 +16,7 @@ import { SocialService } from './social.service';
     TypeOrmModule.forFeature([FriendRequestEntity, DirectConversationEntity, DirectMessageEntity, UserEntity]),
     UsersModule,
     AuditModule,
+    RealtimeModule,
   ],
   controllers: [SocialController],
   providers: [SocialService],

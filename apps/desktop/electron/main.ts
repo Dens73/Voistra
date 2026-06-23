@@ -118,7 +118,7 @@ function readJsonFile<T>(filePath: string): T | null {
 }
 
 function loadRuntimeConfig(): RuntimeConfig {
-  const defaultOrigin = 'http://127.0.0.1:3000';
+  const defaultOrigin = isDev ? 'http://127.0.0.1:3000' : 'http://87.76.4.203:18081';
   const userDataConfigPath = path.join(app.getPath('userData'), 'voistra.config.json');
   const processConfigPath = path.join(process.cwd(), 'voistra.config.json');
   const executableConfigPath = path.join(path.dirname(process.execPath), 'voistra.config.json');
@@ -439,7 +439,7 @@ app.whenReady().then(async () => {
         });
       });
     },
-    { useSystemPicker: true },
+    { useSystemPicker: false },
   );
 
   createWindow();

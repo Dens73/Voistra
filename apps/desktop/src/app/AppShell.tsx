@@ -35,7 +35,7 @@ import type {
 } from './types';
 import { COPY } from './app-copy';
 import { AUDIO_MODE_KEY, LANGUAGE_KEY, REFRESH_KEY, TOKEN_KEY, USER_KEY } from './app-storage';
-import { asMessage } from './app-ui';
+import { RemoteAudioSink, asMessage } from './app-ui';
 import { useLocalAudioControls } from './audio/use-local-audio-controls';
 import { useAppRuntimeEffects } from './use-app-runtime-effects';
 import { useAppShellProps } from './use-app-shell-props';
@@ -195,11 +195,16 @@ export function AppShell() {
   const makingOfferRef = useRef<Set<string>>(new Set());
   const ignoredOfferRef = useRef<Set<string>>(new Set());
   const activeVoiceChannelIdRef = useRef<string>('');
+  const selectedConversationIdRef = useRef<string>('');
   const statsBytesRef = useRef<Map<string, { bytes: number; timestamp: number }>>(new Map());
   const participantSocketsRef = useRef<Map<string, string>>(new Map());
   const autoLoginAttemptedRef = useRef(false);
 
   const i18n = COPY[language];
+
+  useEffect(() => {
+    selectedConversationIdRef.current = selectedConversationId;
+  }, [selectedConversationId]);
 
   useEffect(() => {
     if (token || user || autoLoginAttemptedRef.current) {
@@ -568,6 +573,7 @@ export function AppShell() {
     screenShareEnabled,
     shareSystemAudioEnabled,
     selectedChannel,
+    selectedConversationIdRef,
     selectedConversationId,
     selectedInputDeviceId,
     selectedOutputDeviceId,
@@ -807,6 +813,14 @@ export function AppShell() {
   return (
     <>
       <AppWorkspaceShell {...shellProps} workspaceContent={workspaceContent} />
+
+      <RemoteAudioSink
+        media={remoteMedia}
+        muted={voiceFlags.deafened}
+        outputDeviceId={selectedOutputDeviceId}
+        outputLevel={audioControlForm.outputLevel}
+        volumes={remoteParticipantVolumes}
+      />
 
       <ChannelAccessModal
         open={Boolean(pendingLockedChannel)}
