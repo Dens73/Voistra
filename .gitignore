@@ -45,6 +45,12 @@ scripts/start-zerotier-server.ps1
 scripts/update_vkr*.py
 scripts/update_vkr_toc_pages.ps1
 release/voistra/*.zip
+release/voistra/*.exe
+release/voistra/*.exe.blockmap
+release/voistra/latest.yml
 release/voistra/ready-for-friend/*.zip
+release/voistra/ready-for-friend/*.exe
+release/voistra/ready-for-friend/*.exe.blockmap
+release/voistra/ready-for-friend/latest.yml
 release/voistra/win-unpacked/
 release/voistra/builder-debug.yml

@@ -1,6 +1,6 @@
 {
   "name": "voistra-desktop",
-  "version": "0.1.0",
+  "version": "1.0.2",
   "private": true,
   "description": "Voistra desktop voice workspace",
   "author": "Voistra Team",
@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@sapphi-red/web-noise-suppressor": "^0.3.5",
+    "electron-updater": "^6.8.9",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "socket.io-client": "^4.8.1"
@@ -50,6 +51,15 @@
     "directories": {
       "output": "../../release/voistra"
     },
+    "artifactName": "Voistra-Setup-${version}.${ext}",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Dens73",
+        "repo": "Voistra",
+        "releaseType": "release"
+      }
+    ],
     "electronLanguages": [
       "en-US",
       "ru"

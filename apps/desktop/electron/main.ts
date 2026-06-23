@@ -1,10 +1,33 @@
 import { app, BrowserWindow, desktopCapturer, dialog, ipcMain, session } from 'electron';
+import type { MessageBoxOptions } from 'electron';
+import { autoUpdater } from 'electron-updater';
+import type { ProgressInfo, UpdateInfo } from 'electron-updater';
 import { spawn, type ChildProcess } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
 const isDev = Boolean(process.env.VITE_DEV_SERVER_URL);
 let bundledServerProcess: ChildProcess | null = null;
+let mainWindow: BrowserWindow | null = null;
+let updateCheckStarted = false;
+
+type UpdateState =
+  | 'idle'
+  | 'checking'
+  | 'available'
+  | 'not-available'
+  | 'downloading'
+  | 'downloaded'
+  | 'error';
+
+type UpdateStatus = {
+  state: UpdateState;
+  version?: string;
+  percent?: number;
+  message?: string;
+};
+
+let updateStatus: UpdateStatus = { state: 'idle' };
 
 type CliOptions = {
   profile?: string;
@@ -266,6 +289,112 @@ async function pickDisplaySource(parent: BrowserWindow | null) {
   return sources[response];
 }
 
+function publishUpdateStatus(status: UpdateStatus) {
+  updateStatus = status;
+  for (const window of BrowserWindow.getAllWindows()) {
+    if (!window.isDestroyed()) {
+      window.webContents.send('updates:status', updateStatus);
+    }
+  }
+}
+
+function getUpdateMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function configureAutoUpdates() {
+  if (isDev || !app.isPackaged) {
+    publishUpdateStatus({
+      state: 'not-available',
+      message: 'Updates are disabled in development builds',
+    });
+    return;
+  }
+
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on('checking-for-update', () => {
+    publishUpdateStatus({ state: 'checking' });
+  });
+
+  autoUpdater.on('update-available', (info: UpdateInfo) => {
+    publishUpdateStatus({ state: 'available', version: info.version });
+  });
+
+  autoUpdater.on('update-not-available', (info: UpdateInfo) => {
+    publishUpdateStatus({ state: 'not-available', version: info.version });
+  });
+
+  autoUpdater.on('download-progress', (progress: ProgressInfo) => {
+    publishUpdateStatus({
+      state: 'downloading',
+      percent: Math.round(progress.percent),
+    });
+  });
+
+  autoUpdater.on('update-downloaded', (info: UpdateInfo) => {
+    publishUpdateStatus({ state: 'downloaded', version: info.version });
+
+    const parent = mainWindow && !mainWindow.isDestroyed() ? mainWindow : null;
+    const options: MessageBoxOptions = {
+      type: 'info',
+      buttons: ['Restart now', 'Later'],
+      defaultId: 0,
+      cancelId: 1,
+      title: 'Voistra update is ready',
+      message: `Voistra ${info.version} has been downloaded`,
+      detail: 'Restart the app to install the update.',
+    };
+    const messageBox = parent ? dialog.showMessageBox(parent, options) : dialog.showMessageBox(options);
+    void messageBox
+      .then(({ response }) => {
+        if (response === 0) {
+          autoUpdater.quitAndInstall(false, true);
+        }
+      });
+  });
+
+  autoUpdater.on('error', (error) => {
+    publishUpdateStatus({
+      state: 'error',
+      message: getUpdateMessage(error),
+    });
+  });
+}
+
+async function checkForUpdates() {
+  if (isDev || !app.isPackaged) {
+    publishUpdateStatus({
+      state: 'not-available',
+      message: 'Updates are disabled in development builds',
+    });
+    return updateStatus;
+  }
+
+  try {
+    await autoUpdater.checkForUpdates();
+  } catch (error) {
+    publishUpdateStatus({
+      state: 'error',
+      message: getUpdateMessage(error),
+    });
+  }
+
+  return updateStatus;
+}
+
+function scheduleStartupUpdateCheck() {
+  if (updateCheckStarted || isDev || !app.isPackaged) {
+    return;
+  }
+
+  updateCheckStarted = true;
+  setTimeout(() => {
+    void checkForUpdates();
+  }, 8_000);
+}
+
 function startBundledServer() {
   if (isDev || bundledServerProcess) {
     return;
@@ -373,6 +502,13 @@ function createWindow() {
       nodeIntegration: false,
     },
   });
+  mainWindow = window;
+
+  window.on('closed', () => {
+    if (mainWindow === window) {
+      mainWindow = null;
+    }
+  });
 
   window.webContents.on('did-start-loading', () => {
     console.log('[electron] did-start-loading');
@@ -380,7 +516,9 @@ function createWindow() {
 
   window.webContents.on('did-finish-load', () => {
     console.log('[electron] did-finish-load');
+    window.webContents.send('updates:status', updateStatus);
     void applyAutoLogin(window);
+    scheduleStartupUpdateCheck();
   });
 
   window.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
@@ -412,8 +550,17 @@ function createWindow() {
 
 app.whenReady().then(async () => {
   startBundledServer();
+  configureAutoUpdates();
   ipcMain.handle('app:get-version', () => app.getVersion());
   ipcMain.handle('app:get-platform', () => process.platform);
+  ipcMain.handle('updates:get-status', () => updateStatus);
+  ipcMain.handle('updates:check', () => checkForUpdates());
+  ipcMain.handle('updates:install', () => {
+    if (updateStatus.state === 'downloaded') {
+      autoUpdater.quitAndInstall(false, true);
+    }
+    return updateStatus;
+  });
   ipcMain.on('app:get-runtime-config', (event) => {
     event.returnValue = loadRuntimeConfig();
   });

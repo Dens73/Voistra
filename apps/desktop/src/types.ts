@@ -131,11 +131,29 @@ export type ConnectionMetrics = {
   updatedAt: string;
 };
 
+export type UpdateStatus = {
+  state:
+    | 'idle'
+    | 'checking'
+    | 'available'
+    | 'not-available'
+    | 'downloading'
+    | 'downloaded'
+    | 'error';
+  version?: string;
+  percent?: number;
+  message?: string;
+};
+
 declare global {
   interface Window {
     desktopApi: {
       getVersion: () => Promise<string>;
       getPlatform: () => Promise<string>;
+      getUpdateStatus: () => Promise<UpdateStatus>;
+      checkForUpdates: () => Promise<UpdateStatus>;
+      installUpdate: () => Promise<UpdateStatus>;
+      onUpdateStatus: (callback: (status: UpdateStatus) => void) => () => void;
       getRuntimeConfig: () => {
         apiUrl: string;
         socketUrl: string;

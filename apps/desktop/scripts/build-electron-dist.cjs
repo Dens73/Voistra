@@ -13,6 +13,7 @@ const builderCache = path.join(cacheRoot, 'electron-builder');
 const runCacheRoot = path.join(cacheRoot, 'electron-builder-runs', runId);
 const stagingOutputRoot = path.join(runCacheRoot, 'artifacts');
 const finalOutputRoot = path.join(workspaceRoot, 'release', 'voistra');
+const packageVersion = require(path.join(appRoot, 'package.json')).version;
 
 fs.mkdirSync(electronCache, { recursive: true });
 fs.mkdirSync(builderCache, { recursive: true });
@@ -101,13 +102,21 @@ function copyRuntimeConfig() {
 
 function copyReleaseBundle() {
   const readyForFriendRoot = path.join(finalOutputRoot, 'ready-for-friend');
+  fs.rmSync(readyForFriendRoot, { recursive: true, force: true });
   fs.mkdirSync(readyForFriendRoot, { recursive: true });
 
-  const releaseFiles = [
-    'Voistra Setup 0.1.0.exe',
-    'Voistra Setup 0.1.0.exe.blockmap',
-    'README.txt',
-  ];
+  const releaseFiles = fs
+    .readdirSync(finalOutputRoot)
+    .filter(
+      (fileName) =>
+        fileName === `Voistra Setup ${packageVersion}.exe` ||
+        fileName === `Voistra Setup ${packageVersion}.exe.blockmap` ||
+        fileName === `Voistra-Setup-${packageVersion}.exe` ||
+        fileName === `Voistra-Setup-${packageVersion}.exe.blockmap` ||
+        fileName === 'latest.yml' ||
+        fileName === 'README.txt',
+    )
+    .sort();
 
   for (const fileName of releaseFiles) {
     const sourcePath = path.join(finalOutputRoot, fileName);
