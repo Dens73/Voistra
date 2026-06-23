@@ -1,4 +1,5 @@
 import {
+  type ColumnType,
   Column,
   CreateDateColumn,
   Entity,
@@ -10,6 +11,8 @@ import {
 
 import { UserEntity } from '../users/user.entity';
 import { ServerEntity } from './server.entity';
+
+const memberDateColumnType: ColumnType = process.env.DB_TYPE === 'postgres' ? 'timestamp' : 'datetime';
 
 @Entity('server_members')
 @Unique(['serverId', 'userId'])
@@ -34,16 +37,16 @@ export class ServerMemberEntity {
   @Column({ default: 'member', length: 32 })
   role!: string;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: memberDateColumnType, nullable: true })
   bannedUntil!: Date | null;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: memberDateColumnType, nullable: true })
   mutedUntil!: Date | null;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: memberDateColumnType, nullable: true })
   deafenedUntil!: Date | null;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: memberDateColumnType, nullable: true })
   screenShareBlockedUntil!: Date | null;
 
   @CreateDateColumn()

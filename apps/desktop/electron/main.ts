@@ -410,13 +410,21 @@ function createWindow() {
   }
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   startBundledServer();
   ipcMain.handle('app:get-version', () => app.getVersion());
   ipcMain.handle('app:get-platform', () => process.platform);
   ipcMain.on('app:get-runtime-config', (event) => {
     event.returnValue = loadRuntimeConfig();
   });
+
+  try {
+    await session.defaultSession.setProxy({ mode: 'direct' });
+    console.log('[electron] proxy mode set to direct');
+  } catch (error) {
+    console.warn('[electron] failed to set direct proxy mode', error);
+  }
+
   session.defaultSession.setDisplayMediaRequestHandler(
     (_request, callback) => {
       void pickDisplaySource(BrowserWindow.getFocusedWindow()).then((source) => {

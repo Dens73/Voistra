@@ -1,6 +1,8 @@
-﻿Voistra release files
+Voistra Public
 
-- `Voistra Setup 0.1.0.exe` — Windows installer.
-- `Voistra 0.1.0.exe` — portable build that runs without installation.
+1. Запустите установщик Voistra Setup 0.1.0.exe.
+2. Откройте Voistra.
+3. Зарегистрируйтесь или войдите в аккаунт.
+4. Приложение уже настроено на публичный сервер: http://87.76.4.203:18081
 
-If you downloaded the repository from GitHub as ZIP, use one of the two `.exe` files in this folder.
+Если голос не слышен, проверьте выбранный микрофон и динамики в настройках профиля.

@@ -1,100 +1,86 @@
 # Voistra
 
-![Логотип Voistra](./apps/desktop/public/voistra-mark.svg)
+Voistra — настольное приложение для голосового общения, текстовых каналов, личных сообщений, друзей и демонстрации экрана.
 
-`Voistra` — настольное голосовое рабочее пространство для команд, учебных проектов и демонстраций.  
-Проект объединяет серверы, текстовые и голосовые каналы, личные сообщения, демонстрацию экрана, систему друзей, уведомления и Windows-установщик в одном desktop-клиенте.
-
-## Что уже реализовано
-
-- desktop-клиент на `Electron + React + TypeScript`
-- backend на `NestJS + TypeORM + WebSocket Gateway`
-- регистрация, вход, access/refresh токены
-- серверы, текстовые и голосовые каналы
-- приватные каналы с паролями
-- личные сообщения, друзья, заявки в друзья
-- уведомления, модерация, профиль пользователя
-- демонстрация экрана и голосовое присутствие
-- сборка Windows-приложения через `electron-builder`
-
-## Как скачать и установить
-
-### Готовая версия
-
-Рекомендуемый способ:
-
-1. Открой вкладку `Actions` в репозитории.
-2. Выбери последний запуск `Voistra Windows Build`.
-3. Скачай артефакт `voistra-windows`.
-4. Распакуй архив.
-5. Запусти `Voistra Setup 0.1.0.exe`.
-
-### Как это работает
-
-В репозитории уже настроено:
-
-- каждый push в `main` собирает свежую Windows-версию
-- каждый тег вида `v0.1.0` может публиковать артефакты в GitHub Release
-
-То есть основная ветка подходит как для обычного скачивания, так и для демонстрации дипломного проекта.
-
-## Локальный запуск
-
-```powershell
-npm install
-npm run dev --workspace @diplom/server
-npm run dev:renderer --workspace @diplom/desktop
-npm run dev:electron --workspace @diplom/desktop
-```
-
-Подробности локального запуска: [LOCAL_RUN.md](./LOCAL_RUN.md)
-
-## Сборка установщика
-
-```powershell
-npm install
-npm run dist:desktop
-```
-
-Готовые файлы появляются здесь:
-
-- `release/voistra/win-unpacked`
-- `release/voistra/Voistra Setup 0.1.0.exe`
-
-## Структура репозитория
+Публичная версия клиента уже настроена на рабочий сервер:
 
 ```text
-.
-├─ .github/
-│  └─ workflows/
-├─ apps/
-│  ├─ desktop/
-│  └─ server/
-├─ scripts/
-├─ docker-compose.yml
-├─ package.json
-└─ README.md
+http://87.76.4.203:18081
+```
+
+## Как установить
+
+1. Скачайте готовую Windows-сборку из папки `release/voistra`.
+2. Запустите `Voistra Setup 0.1.0.exe`.
+3. Откройте Voistra.
+4. Создайте аккаунт или войдите в существующий.
+5. Создайте сервер или войдите на сервер по ID.
+
+Если нужна версия без установки, используйте архив с папкой `win-unpacked`: внутри находится `Voistra.exe`.
+
+## Возможности
+
+- регистрация и вход пользователей;
+- серверы, текстовые и голосовые каналы;
+- приватные каналы с паролем;
+- личные сообщения и друзья;
+- уведомления;
+- профиль пользователя и аватар;
+- демонстрация экрана;
+- голосовая связь через WebRTC;
+- TURN/STUN для подключения пользователей из разных сетей;
+- настройки микрофона, вывода звука и шумоподавления.
+
+## Публичный сервер
+
+Серверная часть развернута через Docker Compose и состоит из:
+
+- `voistra_server` — REST API и Socket.IO gateway;
+- `voistra_postgres` — база данных;
+- `voistra_redis` — realtime-состояния;
+- `voistra_coturn` — TURN/STUN для WebRTC.
+
+Открытые порты:
+
+```text
+TCP 18081
+TCP/UDP 3478
+UDP 49160-49200
+```
+
+Проверка доступности backend:
+
+```powershell
+Invoke-RestMethod http://87.76.4.203:18081/api/health
+```
+
+## Локальная разработка
+
+```powershell
+npm install
+npm run dev
+```
+
+Сборка Windows-версии:
+
+```powershell
+npm run dist:desktop
 ```
 
 ## Технологии
 
 - Electron
-- React 19
+- React
+- TypeScript
 - Tailwind CSS
 - NestJS
 - TypeORM
-- SQLite
+- PostgreSQL
 - Redis
+- Socket.IO
+- WebRTC
 - coturn
-- RNNoise-based noise suppression
-
-## Назначение проекта
-
-`Voistra` уже подходит для:
-- локальной демонстрации на Windows
-- демонстрации voice workspace-сценариев
-
 
 ## Автор
 
-Автор проекта: `Dens73`
+Якубович Денис Федорович

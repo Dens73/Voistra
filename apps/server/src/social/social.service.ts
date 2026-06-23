@@ -17,6 +17,8 @@ import { FriendRequestEntity } from './friend-request.entity';
 import { SendDirectMessageDto } from './dto/send-direct-message.dto';
 import { SendFriendRequestDto } from './dto/send-friend-request.dto';
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 @Injectable()
 export class SocialService {
   constructor(
@@ -67,7 +69,9 @@ export class SocialService {
 
   async sendFriendRequest(userId: string, dto: SendFriendRequestDto) {
     const target = await this.usersRepository.findOne({
-      where: [{ id: dto.target }, { username: dto.target }],
+      where: UUID_PATTERN.test(dto.target)
+        ? [{ id: dto.target }, { username: dto.target }]
+        : { username: dto.target },
     });
     if (!target) {
       throw new NotFoundException('Target user not found');

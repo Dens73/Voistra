@@ -6,9 +6,12 @@ out
 .vite
 .cache
 .env
+.env.production
 .env.local
 coverage
 *.log
+tmp-*
+tmp_*
 .DS_Store
 Thumbs.db
 *.sqlite
@@ -24,3 +27,8 @@ diplom_paragraphs_extract.txt
 doc_paragraph_dump.txt
 doc_paragraph_dump_checked.txt
 *.pptx
+deploy/
+release/voistra/*.zip
+release/voistra/ready-for-friend/*.zip
+release/voistra/win-unpacked/
+release/voistra/builder-debug.yml
