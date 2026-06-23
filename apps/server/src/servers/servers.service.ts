@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { AuditService } from '../audit/audit.service';
+import { ChannelEntity, ChannelType } from '../channels/channel.entity';
 import { UserEntity } from '../users/user.entity';
 import { CreateServerDto } from './dto/create-server.dto';
 import { ServerMemberEntity } from './server-member.entity';
@@ -36,6 +37,8 @@ export class ServersService {
     private readonly membersRepository: Repository<ServerMemberEntity>,
     @InjectRepository(UserEntity)
     private readonly usersRepository: Repository<UserEntity>,
+    @InjectRepository(ChannelEntity)
+    private readonly channelsRepository: Repository<ChannelEntity>,
     private readonly auditService: AuditService,
   ) {}
 
@@ -66,6 +69,8 @@ export class ServersService {
 
     await this.auditService.log('server.created', { serverId: server.id, name: server.name }, userId);
 
+    await this.ensureDefaultChannels(server);
+
     return this.findOneForUser(server.id, userId);
   }
 
@@ -79,11 +84,13 @@ export class ServersService {
       order: { createdAt: 'DESC' },
     });
 
-    return servers
-      .filter((server) =>
-        server.members.some((member) => member.userId === userId && !isActiveRestriction(member.bannedUntil)),
-      )
-      .map((server) => this.serializeServer(server, userId));
+    const availableServers = servers.filter((server) =>
+      server.members.some((member) => member.userId === userId && !isActiveRestriction(member.bannedUntil)),
+    );
+
+    await Promise.all(availableServers.map((server) => this.ensureDefaultChannels(server)));
+
+    return availableServers.map((server) => this.serializeServer(server, userId));
   }
 
   async findOneForUser(serverId: string, userId: string) {
@@ -107,6 +114,8 @@ export class ServersService {
     if (isActiveRestriction(membership.bannedUntil)) {
       throw new ForbiddenException('You are temporarily banned from this server');
     }
+
+    await this.ensureDefaultChannels(server);
 
     return this.serializeServer(server, userId);
   }
@@ -299,6 +308,41 @@ export class ServersService {
     }
 
     return membership;
+  }
+
+  private async ensureDefaultChannels(server: ServerEntity) {
+    if (server.channels?.length) {
+      return;
+    }
+
+    const existingChannels = await this.channelsRepository.find({
+      where: { serverId: server.id },
+      order: { createdAt: 'ASC' },
+    });
+
+    if (existingChannels.length) {
+      server.channels = existingChannels;
+      return;
+    }
+
+    server.channels = await this.channelsRepository.save([
+      this.channelsRepository.create({
+        name: 'general',
+        type: ChannelType.TEXT,
+        isPrivate: false,
+        passwordHash: null,
+        serverId: server.id,
+        createdById: server.ownerId,
+      }),
+      this.channelsRepository.create({
+        name: 'voice',
+        type: ChannelType.VOICE,
+        isPrivate: false,
+        passwordHash: null,
+        serverId: server.id,
+        createdById: server.ownerId,
+      }),
+    ]);
   }
 
   private serializeServer(server: ServerEntity, userId: string) {

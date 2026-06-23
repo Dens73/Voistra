@@ -82,7 +82,6 @@ services:
       - --user=${TURN_USERNAME}:${TURN_PASSWORD}
       - --min-port=${TURN_MIN_PORT:-49160}
       - --max-port=${TURN_MAX_PORT:-49200}
-      - --no-multicast-peers
     ports:
       - "${TURN_PORT:-3478}:${TURN_PORT:-3478}/tcp"
       - "${TURN_PORT:-3478}:${TURN_PORT:-3478}/udp"

@@ -1,4 +1,5 @@
 Word.docx
+*.docx
 work*.pdf
 node_modules
 dist
@@ -28,6 +29,21 @@ doc_paragraph_dump.txt
 doc_paragraph_dump_checked.txt
 *.pptx
 deploy/
+edit_diplom_voistra.py
+apps/desktop/public/diploma-shot.html
+scripts/build_defense_presentation.js
+scripts/build_vkr*.py
+scripts/build_voistra_vkr_docx.py
+scripts/expand_*.py
+scripts/finalize_vkr_docx.py
+scripts/fix_vkr_middle_insertions.py
+scripts/generate_*.py
+scripts/rebuild_vkr_images_clean.py
+scripts/revise_vkr_structure.py
+scripts/authorize-zerotier-member.ps1
+scripts/start-zerotier-server.ps1
+scripts/update_vkr*.py
+scripts/update_vkr_toc_pages.ps1
 release/voistra/*.zip
 release/voistra/ready-for-friend/*.zip
 release/voistra/win-unpacked/
